@@ -1,0 +1,25 @@
+[Unit]
+Description=Splitflap Alarm Clock
+After=network-online.target mpd.service avahi-daemon.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/alex/Projects/radio
+ExecStart=/home/alex/Projects/radio/venv/bin/python main.py
+Restart=on-failure
+RestartSec=5
+
+# Give the I2C bus and SPI access
+SupplementaryGroups=i2c spi gpio
+
+# NTP sync — systemd-timesyncd uses time.cloudflare.com (set in /etc/systemd/timesyncd.conf)
+# No extra config needed here; timesyncd runs independently and the clock reads wall time.
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=radio-clock
+
+[Install]
+WantedBy=multi-user.target

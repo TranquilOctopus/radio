@@ -1,0 +1,218 @@
+:root {
+  --bg: #111;
+  --surface: #1e1e1e;
+  --surface2: #2a2a2a;
+  --accent: #e8a020;
+  --accent2: #c47a10;
+  --text: #f0f0f0;
+  --text-dim: #888;
+  --danger: #c0392b;
+  --success: #27ae60;
+  --radius: 12px;
+  --gap: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) var(--gap) env(safe-area-inset-bottom);
+}
+
+h1 { font-size: 1.1rem; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; }
+h2 { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.1em; }
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0 8px;
+  border-bottom: 1px solid var(--surface2);
+  margin-bottom: var(--gap);
+}
+
+.badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--surface2);
+  color: var(--text-dim);
+}
+.badge.active { background: var(--success); color: #fff; }
+.badge.alarm  { background: var(--accent);  color: #000; }
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: var(--gap);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+/* Toggle switch */
+.toggle { position: relative; display: inline-block; width: 50px; height: 28px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; inset: 0;
+  background: var(--surface2);
+  border-radius: 28px;
+  transition: 0.2s;
+  cursor: pointer;
+}
+.slider::before {
+  content: "";
+  position: absolute;
+  height: 22px; width: 22px;
+  left: 3px; bottom: 3px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  transition: 0.2s;
+}
+input:checked + .slider { background: var(--accent); }
+input:checked + .slider::before { transform: translateX(22px); background: #fff; }
+
+/* Time picker */
+input[type="time"] {
+  background: var(--surface2);
+  border: none;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 2.2rem;
+  font-weight: 300;
+  text-align: center;
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+
+/* Range slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.slider-row span { min-width: 36px; text-align: right; color: var(--text-dim); font-size: 0.9rem; }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 20px;
+  min-height: 48px;
+  transition: opacity 0.15s;
+}
+.btn:active { opacity: 0.7; }
+.btn-primary { background: var(--accent); color: #000; }
+.btn-secondary { background: var(--surface2); color: var(--text); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-full { width: 100%; }
+.btn-row { display: flex; gap: 10px; }
+.btn-row .btn { flex: 1; }
+
+/* Select */
+select {
+  background: var(--surface2);
+  border: none;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.95rem;
+  padding: 12px;
+  width: 100%;
+  min-height: 48px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+/* Number input */
+input[type="number"] {
+  background: var(--surface2);
+  border: none;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  padding: 10px 14px;
+  width: 80px;
+  text-align: center;
+}
+
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.label { font-size: 0.9rem; color: var(--text-dim); }
+
+/* Collapsible shortcut guide */
+details { margin-bottom: var(--gap); }
+summary {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+summary::after { content: "›"; font-size: 1.2rem; transition: transform 0.2s; }
+details[open] summary::after { transform: rotate(90deg); }
+.guide {
+  background: var(--surface);
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 0 16px 16px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.8;
+}
+.guide ol { padding-left: 18px; }
+.guide code {
+  background: var(--surface2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+footer {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  padding: 20px 0 32px;
+}

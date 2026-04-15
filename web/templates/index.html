@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Splitflap Clock</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <h1>Splitflap Clock</h1>
+  <span class="badge" id="airplay-badge">AirPlay</span>
+</header>
+
+<!-- ── Alarm ─────────────────────────────────────────── -->
+<div class="card">
+  <div class="card-header">
+    <h2>Alarm</h2>
+    <label class="toggle">
+      <input type="checkbox" id="alarm-enabled" onchange="setAlarmEnabled(this.checked)">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <input type="time" id="alarm-time" onchange="setAlarmTime(this.value)">
+
+  <div class="row" style="margin-top:12px">
+    <span class="label">Snooze duration</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <input type="number" id="snooze-duration" min="1" max="30" value="9" onchange="setSnooze(this.value)">
+      <span class="label">min</span>
+    </div>
+  </div>
+
+  <div class="btn-row" style="margin-top:14px" id="alarm-actions" hidden>
+    <button class="btn btn-secondary" onclick="api('POST','/alarm/snooze')">Snooze</button>
+    <button class="btn btn-danger" onclick="api('POST','/alarm/dismiss')">Dismiss</button>
+  </div>
+</div>
+
+<!-- ── Radio ─────────────────────────────────────────── -->
+<div class="card">
+  <div class="card-header">
+    <h2>Radio</h2>
+    <span class="badge" id="radio-badge">Stopped</span>
+  </div>
+
+  <select id="station-select" onchange="setStation(this.value)">
+    {% for station in config.radio.stations %}
+    <option value="{{ loop.index0 }}" {% if loop.index0 == config.radio.default_station %}selected{% endif %}>
+      {{ station.name }}
+    </option>
+    {% endfor %}
+  </select>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="api('POST','/radio/play',{station_index:+stationSelect.value})">Play</button>
+    <button class="btn btn-secondary" onclick="api('POST','/radio/stop')">Stop</button>
+  </div>
+</div>
+
+<!-- ── Volume ─────────────────────────────────────────── -->
+<div class="card">
+  <div class="card-header">
+    <h2>Volume</h2>
+    <span class="label" id="volume-label">{{ config.radio.volume }}%</span>
+  </div>
+  <div class="slider-row">
+    <span>🔈</span>
+    <input type="range" id="volume-slider" min="0" max="100" value="{{ config.radio.volume }}"
+           oninput="onVolumeInput(this.value)" onchange="setVolume(this.value)">
+    <span>🔊</span>
+  </div>
+  <p class="label" style="font-size:0.75rem;margin-top:8px;color:var(--text-dim)">
+    Physical pot overrides this when connected.
+  </p>
+</div>
+
+<!-- ── LED ────────────────────────────────────────────── -->
+<div class="card">
+  <div class="card-header">
+    <h2>Illumination</h2>
+    <label class="toggle">
+      <input type="checkbox" id="led-enabled" onchange="setLED(this.checked)">
+      <span class="slider"></span>
+    </label>
+  </div>
+  <div class="slider-row">
+    <span>☽</span>
+    <input type="range" id="brightness-slider" min="0" max="255" value="{{ config.led.brightness }}"
+           oninput="onBrightnessInput(this.value)" onchange="setBrightness(this.value)">
+    <span>☀</span>
+    <span id="brightness-label">{{ config.led.brightness }}</span>
+  </div>
+</div>
+
+<!-- ── iPhone Shortcut guide ─────────────────────────── -->
+<details>
+  <summary>iPhone alarm sync setup</summary>
+  <div class="guide">
+    <p>Create an iOS Shortcut so your wake-up alarm syncs automatically:</p>
+    <ol>
+      <li>Open the <strong>Shortcuts</strong> app → <em>Automation</em> tab</li>
+      <li>Tap <strong>+</strong> → <em>New Automation</em></li>
+      <li>Scroll to <strong>Alarm</strong> → choose <em>When my Wake Up Alarm changes</em></li>
+      <li>Add action: <strong>URL</strong> → enter <code>http://splitflapclock.local/alarm</code></li>
+      <li>Add action: <strong>Get Contents of URL</strong></li>
+      <li>Set Method: <code>POST</code>, Headers: <code>Content-Type: application/json</code></li>
+      <li>Body (JSON): <code>{"time": "HH:MM"}</code> — replace HH:MM with the <em>Alarm Time</em> shortcut variable</li>
+      <li>Save and enable the automation</li>
+    </ol>
+    <p style="margin-top:10px">The clock is reachable at <code>http://splitflapclock.local</code> on your local network.</p>
+  </div>
+</details>
+
+<footer>Splitflap Clock · <a href="/docs" style="color:var(--accent)">API docs</a></footer>
+
+<script>
+const stationSelect = document.getElementById('station-select');
+
+async function api(method, path, body) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(path, opts);
+    if (!r.ok) console.error(await r.text());
+    await refreshStatus();
+  } catch (e) { console.error(e); }
+}
+
+function setAlarmEnabled(on) {
+  const time = document.getElementById('alarm-time').value || '07:00';
+  if (on) api('POST', '/alarm', { time });
+  else     api('DELETE', '/alarm');
+}
+
+function setAlarmTime(time) {
+  const enabled = document.getElementById('alarm-enabled').checked;
+  if (enabled) api('POST', '/alarm', { time });
+}
+
+function setSnooze(val) {
+  api('POST', '/settings', { snooze_duration_minutes: +val });
+}
+
+function setStation(idx) {
+  // Only updates default; does not auto-play
+  api('POST', '/settings', { default_station: +idx });
+}
+
+function onVolumeInput(val) {
+  document.getElementById('volume-label').textContent = val + '%';
+}
+function setVolume(val) {
+  api('POST', '/volume', { level: +val });
+}
+
+function onBrightnessInput(val) {
+  document.getElementById('brightness-label').textContent = val;
+}
+function setBrightness(val) {
+  const on = document.getElementById('led-enabled').checked;
+  api('POST', '/led', { on, brightness: +val });
+}
+
+function setLED(on) {
+  const brightness = +document.getElementById('brightness-slider').value;
+  api('POST', '/led', { on, brightness });
+}
+
+async function refreshStatus() {
+  try {
+    const s = await fetch('/status').then(r => r.json());
+
+    // Alarm
+    document.getElementById('alarm-enabled').checked = s.alarm.enabled;
+    if (s.alarm.time) document.getElementById('alarm-time').value = s.alarm.time;
+    document.getElementById('alarm-actions').hidden = !s.alarm.active;
+    document.getElementById('snooze-duration').value = s.snooze_duration_minutes;
+
+    // Radio
+    const radioBadge = document.getElementById('radio-badge');
+    radioBadge.textContent = s.radio.state === 'play' ? s.radio.station_name : 'Stopped';
+    radioBadge.className = 'badge' + (s.radio.state === 'play' ? ' active' : '');
+    document.getElementById('volume-slider').value = s.radio.volume;
+    document.getElementById('volume-label').textContent = s.radio.volume + '%';
+
+    // AirPlay
+    const apBadge = document.getElementById('airplay-badge');
+    apBadge.className = 'badge' + (s.airplay_active ? ' active' : '');
+
+    // LED
+    document.getElementById('led-enabled').checked = s.led.on;
+    document.getElementById('brightness-slider').value = s.led.brightness;
+    document.getElementById('brightness-label').textContent = s.led.brightness;
+  } catch (e) { /* server may be temporarily unreachable */ }
+}
+
+// Poll status every 5 seconds
+refreshStatus();
+setInterval(refreshStatus, 5000);
+</script>
+</body>
+</html>

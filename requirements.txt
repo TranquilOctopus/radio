@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+jinja2
+aiofiles
+pyyaml
+python-multipart
+smbus2
+RPi.GPIO
+rpi-ws281x
+python-mpd2
+apscheduler
