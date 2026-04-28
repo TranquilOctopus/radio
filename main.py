@@ -43,11 +43,33 @@ def build_i2c_bus(cfg: dict):
         return MockSMBus()
 
 
+def _any_device_responds(bus, addresses: list[int]) -> bool:
+    """Return True if any of the given I2C addresses ACKs a 1-byte read."""
+    try:
+        from smbus2 import i2c_msg
+    except ImportError:
+        return True  # mock bus path — nothing to probe
+    for addr in addresses:
+        try:
+            bus.i2c_rdwr(i2c_msg.read(addr, 1))
+            return True
+        except OSError:
+            continue
+    return False
+
+
 def build_display(bus, cfg: dict):
     from splitflap.module import SplitFlapModule
     from splitflap.display import SplitFlapDisplay
 
     addresses = [0x20, 0x21, 0x22, 0x23]
+    if not _any_device_responds(bus, addresses):
+        logger.warning(
+            "No PCF8575 splitflap modules detected on I2C — using mock bus for display"
+        )
+        from hardware.mock import MockSMBus
+        bus = MockSMBus()
+
     offsets = cfg["splitflap"]["module_offsets"]
     magnet_pos = cfg["splitflap"]["magnet_position"]
 
@@ -76,9 +98,17 @@ def build_player(cfg: dict):
 def build_potentiometer(bus, cfg: dict, on_change):
     from hardware.potentiometer import Potentiometer
     hw = cfg["hardware"]
+    address = hw["ads1115"]["address"]
+    if not _any_device_responds(bus, [address]):
+        logger.warning(
+            "ADS1115 not detected at 0x%02X — using mock bus for potentiometer",
+            address,
+        )
+        from hardware.mock import MockSMBus
+        bus = MockSMBus()
     pot = Potentiometer(
         bus,
-        address=hw["ads1115"]["address"],
+        address=address,
         poll_hz=hw["ads1115"]["poll_hz"],
         on_change=on_change,
     )
