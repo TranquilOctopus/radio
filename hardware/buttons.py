@@ -7,6 +7,10 @@ Snooze button:
 
 LED button:
   - Single press  → toggle LED strip
+
+Uses gpiozero (which sits on top of lgpio on Bookworm/Trixie). The older
+RPi.GPIO library is unmaintained and its add_event_detect is broken on
+modern Pi kernels.
 """
 import logging
 import threading
@@ -16,10 +20,11 @@ from typing import Callable
 logger = logging.getLogger(__name__)
 
 try:
-    import RPi.GPIO as GPIO
-except ImportError:
-    from hardware.mock import MockGPIO as GPIO  # type: ignore
-    logger.warning("RPi.GPIO not available — using mock GPIO")
+    from gpiozero import Button
+    _HAS_GPIO = True
+except ImportError as _exc:
+    _HAS_GPIO = False
+    logger.warning("gpiozero not available — buttons disabled (%s)", _exc)
 
 
 class ButtonHandler:
@@ -42,24 +47,26 @@ class ButtonHandler:
 
         self._snooze_last_press = 0.0
         self._snooze_timer: threading.Timer | None = None
+        self._snooze_button: Button | None = None
+        self._led_button: Button | None = None
 
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(snooze_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(led_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        if not _HAS_GPIO:
+            return
 
-        GPIO.add_event_detect(
-            snooze_pin, GPIO.FALLING,
-            callback=self._snooze_pressed,
-            bouncetime=50,
-        )
-        GPIO.add_event_detect(
-            led_pin, GPIO.FALLING,
-            callback=self._led_pressed,
-            bouncetime=50,
-        )
+        try:
+            self._snooze_button = Button(snooze_pin, pull_up=True, bounce_time=0.05)
+            self._led_button = Button(led_pin, pull_up=True, bounce_time=0.05)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Button init failed (%s) — buttons disabled", exc)
+            self._snooze_button = None
+            self._led_button = None
+            return
+
+        self._snooze_button.when_pressed = self._snooze_pressed
+        self._led_button.when_pressed = self._led_pressed
         logger.info("Button handler ready (snooze=GPIO%d, led=GPIO%d)", snooze_pin, led_pin)
 
-    def _snooze_pressed(self, channel: int) -> None:
+    def _snooze_pressed(self) -> None:
         now = time.monotonic()
 
         if self._snooze_timer is not None:
@@ -67,12 +74,10 @@ class ButtonHandler:
             self._snooze_timer = None
 
         if now - self._snooze_last_press < self.double_press_window:
-            # Double press → dismiss
             self._snooze_last_press = 0.0
             logger.debug("Snooze button: double press → dismiss")
             threading.Thread(target=self._on_dismiss, daemon=True).start()
         else:
-            # Might be a single press — wait to see if a second follows
             self._snooze_last_press = now
             self._snooze_timer = threading.Timer(
                 self.double_press_window, self._fire_single_snooze
@@ -84,11 +89,14 @@ class ButtonHandler:
         self._snooze_timer = None
         threading.Thread(target=self._on_snooze, daemon=True).start()
 
-    def _led_pressed(self, channel: int) -> None:
+    def _led_pressed(self) -> None:
         logger.debug("LED button pressed → toggle")
         threading.Thread(target=self._on_led_toggle, daemon=True).start()
 
     def cleanup(self) -> None:
         if self._snooze_timer:
             self._snooze_timer.cancel()
-        GPIO.cleanup()
+        if self._snooze_button is not None:
+            self._snooze_button.close()
+        if self._led_button is not None:
+            self._led_button.close()

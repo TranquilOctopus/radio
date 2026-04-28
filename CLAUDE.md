@@ -24,8 +24,8 @@ venv/bin/pip install -r requirements.txt
 venv/bin/python main.py
 ```
 
-Hardware libraries (RPi.GPIO, smbus2, rpi_ws281x) fall back to mocks in
-`hardware/mock.py` when not on a Pi. MPD must be running for audio; without it
+Hardware libraries (gpiozero/lgpio, smbus2, neopixel_spi) fall back to mocks
+in `hardware/mock.py` (or in-place no-op stubs) when not on a Pi. MPD must be running for audio; without it
 the player stub logs warnings but does not crash.
 
 Web UI: http://localhost  
