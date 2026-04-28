@@ -16,6 +16,8 @@ except ImportError:
     from hardware.mock import MockPixelStrip as PixelStrip, mock_color as Color  # type: ignore
     logger.warning("rpi_ws281x not available — using mock LED strip")
 
+from hardware.mock import MockPixelStrip, mock_color as _mock_color
+
 # SPI mode: use pin 10 (SPI MOSI). The rpi_ws281x library maps GPIO 10 to SPI.
 _LED_PIN = 10
 _LED_FREQ_HZ = 800_000
@@ -38,11 +40,21 @@ class LEDStrip:
         self._num_leds = num_leds
         self._brightness = brightness
         self._on = False
+        self._color = Color
         self._strip = PixelStrip(
             num_leds, _LED_PIN, _LED_FREQ_HZ, _LED_DMA,
             _LED_INVERT, brightness, _LED_CHANNEL,
         )
-        self._strip.begin()
+        try:
+            self._strip.begin()
+        except RuntimeError as exc:
+            logger.warning(
+                "rpi_ws281x init failed (%s) — falling back to mock LED strip",
+                exc,
+            )
+            self._strip = MockPixelStrip(num_leds, _LED_PIN)
+            self._strip.begin()
+            self._color = _mock_color
         self._pulse_thread: threading.Thread | None = None
         self._pulse_running = False
 
@@ -104,7 +116,7 @@ class LEDStrip:
         self._fill(_WARM_R, _WARM_G, _WARM_B, _WARM_W)
 
     def _fill(self, r: int, g: int, b: int, w: int) -> None:
-        color = Color(r, g, b, w)
+        color = self._color(r, g, b, w)
         for i in range(self._num_leds):
             self._strip.setPixelColor(i, color)
         self._strip.show()
