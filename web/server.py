@@ -48,7 +48,7 @@ def _save_cfg() -> None:
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     cfg = _cfg()
-    return templates.TemplateResponse("index.html", {"request": request, "config": cfg})
+    return templates.TemplateResponse(request, "index.html", {"config": cfg})
 
 
 # ---------------------------------------------------------------------------
