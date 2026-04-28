@@ -20,6 +20,8 @@ radio:
 
 led:
   brightness: 80
+  # Strip type: "WS2812" (RGB, 3 channels) or "SK6812" (RGBW, 4 channels).
+  strip_type: WS2812
 
 splitflap:
   # Per-module step offsets for mechanical tuning (filled in during hardware bench)

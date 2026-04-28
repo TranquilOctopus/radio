@@ -1,10 +1,13 @@
 """
-SK6812 RGBW LED strip controller using adafruit-circuitpython-neopixel-spi.
+WS2812 / SK6812 LED strip controller using adafruit-circuitpython-neopixel-spi.
 
 The strip is driven via SPI (GPIO 10 / SPI0 MOSI) so it doesn't conflict with
 the I2S DAC on GPIO 18. The neopixel_spi library shifts WS281x-compatible
 timing out of the SPI peripheral, so it works on any Pi without
 hardware-revision detection (unlike rpi_ws281x).
+
+Strip type is selected via config.yaml:led.strip_type — "WS2812" (RGB) or
+"SK6812" (RGBW). The W channel is dropped automatically for RGB strips.
 """
 import logging
 import threading
@@ -35,12 +38,14 @@ _PULSE_PERIOD = 2.0   # seconds per full pulse cycle
 
 
 class LEDStrip:
-    def __init__(self, num_leds: int, brightness: int = 128):
+    def __init__(self, num_leds: int, brightness: int = 128, strip_type: str = "SK6812"):
         self._num_leds = num_leds
         self._brightness = brightness  # 0–255, mapped to 0.0–1.0 for neopixel_spi
         self._on = False
         self._mock = False
         self._pixels = None
+        self._strip_type = strip_type.upper()
+        self._has_white = self._strip_type == "SK6812"
         self._init_pixels()
         self._pulse_thread: threading.Thread | None = None
         self._pulse_running = False
@@ -51,13 +56,15 @@ class LEDStrip:
             return
         try:
             spi = board.SPI()
+            pixel_order = neopixel_spi.GRBW if self._has_white else neopixel_spi.GRB
             self._pixels = neopixel_spi.NeoPixel_SPI(
                 spi,
                 self._num_leds,
                 brightness=self._brightness / 255.0,
-                pixel_order=neopixel_spi.GRBW,
+                pixel_order=pixel_order,
                 auto_write=False,
             )
+            logger.info("LED strip ready: %d × %s", self._num_leds, self._strip_type)
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "neopixel_spi init failed (%s) — falling back to mock LED strip",
@@ -130,7 +137,7 @@ class LEDStrip:
     def _fill(self, r: int, g: int, b: int, w: int) -> None:
         if self._mock or self._pixels is None:
             return
-        color = (r, g, b, w)
+        color = (r, g, b, w) if self._has_white else (r, g, b)
         for i in range(self._num_leds):
             self._pixels[i] = color
         self._show()

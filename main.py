@@ -82,10 +82,12 @@ def build_display(bus, cfg: dict):
 
 def build_led(cfg: dict):
     # LED count is stored in config once known; default to 30 until bench is built
-    num_leds = cfg.get("led", {}).get("num_leds", 30)
-    brightness = cfg["led"]["brightness"]
+    led_cfg = cfg.get("led", {})
+    num_leds = led_cfg.get("num_leds", 30)
+    brightness = led_cfg["brightness"]
+    strip_type = led_cfg.get("strip_type", "SK6812")
     from hardware.led_strip import LEDStrip
-    return LEDStrip(num_leds=num_leds, brightness=brightness)
+    return LEDStrip(num_leds=num_leds, brightness=brightness, strip_type=strip_type)
 
 
 def build_player(cfg: dict):
