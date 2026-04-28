@@ -102,7 +102,7 @@ audio_output {
 ## 6. Python environment
 
 ```bash
-cd /home/alex/Projects/radio
+cd /home/admin/Projects/radio
 python3 -m venv venv
 venv/bin/pip install -r requirements.txt
 ```
