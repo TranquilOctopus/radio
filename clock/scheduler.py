@@ -2,9 +2,10 @@
 Alarm scheduler.
 
 Uses APScheduler to fire the alarm daily at the configured local wall-clock
-time.  Because the job is defined in local time, it survives DST transitions
-automatically — APScheduler re-resolves the next fire time after each
-execution.
+time.  The scheduler picks up the system timezone via tzlocal.get_localzone()
+(reading /etc/localtime), so DST transitions are handled by APScheduler's
+CronTrigger inside the resolved IANA zone.  Set the system zone with
+`sudo timedatectl set-timezone <Region/City>`.
 """
 import logging
 from datetime import datetime, timedelta
@@ -23,7 +24,7 @@ class AlarmScheduler:
     def __init__(self, on_alarm: Callable, on_snooze_end: Callable):
         self._on_alarm = on_alarm
         self._on_snooze_end = on_snooze_end
-        self._scheduler = BackgroundScheduler(timezone="local")
+        self._scheduler = BackgroundScheduler()
         self._alarm_time: str | None = None          # "HH:MM"
         self._snooze_active = False
         self._scheduler.start()

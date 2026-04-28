@@ -52,9 +52,11 @@ the I2S DAC on GPIO 18.
   at startup in long-lived objects.
 - The splitflap display holds a threading.Lock; never call display methods from
   two threads concurrently.
-- Alarm time is stored and scheduled in **local wall-clock time** (APScheduler
-  CronTrigger with `timezone="local"`). Do not convert to UTC — this is what
-  makes DST survival work.
+- Alarm time is stored and scheduled in **local wall-clock time**. The
+  scheduler resolves the system timezone via `tzlocal.get_localzone()` (no
+  explicit `timezone=` kwarg — `"local"` is not a valid IANA zone name).
+  Do not convert to UTC; APScheduler's CronTrigger handles DST inside the
+  resolved zone. Set the Pi's zone with `sudo timedatectl set-timezone ...`.
 - AirPlay detection uses a sentinel file `/run/airplay-active` written by
   shairport-sync sessioncontrol scripts (see `systemd/README.md`).
 
