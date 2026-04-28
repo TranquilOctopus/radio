@@ -5,7 +5,8 @@ aiofiles
 pyyaml
 python-multipart
 smbus2
-RPi.GPIO
+gpiozero
+lgpio
 adafruit-circuitpython-neopixel-spi
 python-mpd2
 apscheduler
