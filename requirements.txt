@@ -6,6 +6,6 @@ pyyaml
 python-multipart
 smbus2
 RPi.GPIO
-rpi-ws281x
+adafruit-circuitpython-neopixel-spi
 python-mpd2
 apscheduler
