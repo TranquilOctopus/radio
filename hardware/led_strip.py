@@ -1,8 +1,10 @@
 """
-SK6812 RGBW LED strip controller using rpi_ws281x in SPI mode.
+SK6812 RGBW LED strip controller using adafruit-circuitpython-neopixel-spi.
 
-SPI mode is required to avoid conflict with the I2S DAC on GPIO 18.
-Connect the LED strip data line to GPIO 10 (SPI0 MOSI).
+The strip is driven via SPI (GPIO 10 / SPI0 MOSI) so it doesn't conflict with
+the I2S DAC on GPIO 18. The neopixel_spi library shifts WS281x-compatible
+timing out of the SPI peripheral, so it works on any Pi without
+hardware-revision detection (unlike rpi_ws281x).
 """
 import logging
 import threading
@@ -11,52 +13,58 @@ import time
 logger = logging.getLogger(__name__)
 
 try:
-    from rpi_ws281x import PixelStrip, Color
-except ImportError:
-    from hardware.mock import MockPixelStrip as PixelStrip, mock_color as Color  # type: ignore
-    logger.warning("rpi_ws281x not available — using mock LED strip")
+    import board
+    import neopixel_spi
+    _HAS_NEOPIXEL = True
+except (ImportError, NotImplementedError, Exception) as _exc:  # noqa: BLE001
+    # ImportError on non-Pi machines; NotImplementedError / generic Exception
+    # if Blinka can't detect the platform at import time.
+    _HAS_NEOPIXEL = False
+    _import_error = _exc
+    logger.warning("neopixel_spi not available — LED strip will use mock (%s)", _exc)
 
-from hardware.mock import MockPixelStrip, mock_color as _mock_color
 
-# SPI mode: use pin 10 (SPI MOSI). The rpi_ws281x library maps GPIO 10 to SPI.
-_LED_PIN = 10
-_LED_FREQ_HZ = 800_000
-_LED_DMA = 5        # DMA channel — use 5 for SPI mode
-_LED_INVERT = False
-_LED_CHANNEL = 0
-
-# Warm white in RGBW: R=255, G=200, B=100, W=255 gives a warm incandescent feel.
+# Warm white in RGBW — incandescent-feeling
 _WARM_R = 255
 _WARM_G = 180
 _WARM_B = 80
 _WARM_W = 255
 
 _PULSE_STEPS = 50
-_PULSE_PERIOD = 2.0   # seconds for one full pulse cycle
+_PULSE_PERIOD = 2.0   # seconds per full pulse cycle
 
 
 class LEDStrip:
     def __init__(self, num_leds: int, brightness: int = 128):
         self._num_leds = num_leds
-        self._brightness = brightness
+        self._brightness = brightness  # 0–255, mapped to 0.0–1.0 for neopixel_spi
         self._on = False
-        self._color = Color
-        self._strip = PixelStrip(
-            num_leds, _LED_PIN, _LED_FREQ_HZ, _LED_DMA,
-            _LED_INVERT, brightness, _LED_CHANNEL,
-        )
-        try:
-            self._strip.begin()
-        except RuntimeError as exc:
-            logger.warning(
-                "rpi_ws281x init failed (%s) — falling back to mock LED strip",
-                exc,
-            )
-            self._strip = MockPixelStrip(num_leds, _LED_PIN)
-            self._strip.begin()
-            self._color = _mock_color
+        self._mock = False
+        self._pixels = None
+        self._init_pixels()
         self._pulse_thread: threading.Thread | None = None
         self._pulse_running = False
+
+    def _init_pixels(self) -> None:
+        if not _HAS_NEOPIXEL:
+            self._mock = True
+            return
+        try:
+            spi = board.SPI()
+            self._pixels = neopixel_spi.NeoPixel_SPI(
+                spi,
+                self._num_leds,
+                brightness=self._brightness / 255.0,
+                pixel_order=neopixel_spi.GRBW,
+                auto_write=False,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "neopixel_spi init failed (%s) — falling back to mock LED strip",
+                exc,
+            )
+            self._mock = True
+            self._pixels = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -65,8 +73,8 @@ class LEDStrip:
     def turn_on(self, brightness: int | None = None) -> None:
         self._stop_pulse()
         if brightness is not None:
-            self._brightness = brightness
-        self._strip.setBrightness(self._brightness)
+            self._brightness = max(0, min(255, brightness))
+        self._apply_brightness()
         self._fill_warm()
         self._on = True
 
@@ -84,8 +92,8 @@ class LEDStrip:
     def set_brightness(self, brightness: int) -> None:
         self._brightness = max(0, min(255, brightness))
         if self._on:
-            self._strip.setBrightness(self._brightness)
-            self._strip.show()
+            self._apply_brightness()
+            self._show()
 
     def start_pulse(self) -> None:
         """Gentle breathing animation used during alarm."""
@@ -97,7 +105,6 @@ class LEDStrip:
         self._pulse_thread.start()
 
     def stop_pulse(self) -> None:
-        # turn_on() handles the pulse thread teardown
         self.turn_on()
 
     @property
@@ -112,14 +119,26 @@ class LEDStrip:
     # Internal helpers
     # ------------------------------------------------------------------
 
+    def _apply_brightness(self) -> None:
+        if self._mock or self._pixels is None:
+            return
+        self._pixels.brightness = self._brightness / 255.0
+
     def _fill_warm(self) -> None:
         self._fill(_WARM_R, _WARM_G, _WARM_B, _WARM_W)
 
     def _fill(self, r: int, g: int, b: int, w: int) -> None:
-        color = self._color(r, g, b, w)
+        if self._mock or self._pixels is None:
+            return
+        color = (r, g, b, w)
         for i in range(self._num_leds):
-            self._strip.setPixelColor(i, color)
-        self._strip.show()
+            self._pixels[i] = color
+        self._show()
+
+    def _show(self) -> None:
+        if self._mock or self._pixels is None:
+            return
+        self._pixels.show()
 
     def _stop_pulse(self) -> None:
         if self._pulse_running:
@@ -131,19 +150,20 @@ class LEDStrip:
     def _pulse_loop(self) -> None:
         step_time = _PULSE_PERIOD / (_PULSE_STEPS * 2)
         while self._pulse_running:
-            # Fade up
             for step in range(_PULSE_STEPS):
                 if not self._pulse_running:
                     return
-                brightness = int((step / _PULSE_STEPS) * self._brightness)
-                self._strip.setBrightness(brightness)
-                self._fill_warm()
+                self._brightness_step(step / _PULSE_STEPS)
                 time.sleep(step_time)
-            # Fade down
             for step in range(_PULSE_STEPS, 0, -1):
                 if not self._pulse_running:
                     return
-                brightness = int((step / _PULSE_STEPS) * self._brightness)
-                self._strip.setBrightness(brightness)
-                self._fill_warm()
+                self._brightness_step(step / _PULSE_STEPS)
                 time.sleep(step_time)
+
+    def _brightness_step(self, fraction: float) -> None:
+        target = int(fraction * self._brightness)
+        if self._mock or self._pixels is None:
+            return
+        self._pixels.brightness = target / 255.0
+        self._fill_warm()

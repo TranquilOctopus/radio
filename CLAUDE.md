@@ -42,7 +42,9 @@ API docs: http://localhost/docs
 | I2S (GPIO 18–21) | HAT DAC → MAX9744 → speakers |
 
 **Important:** SK6812 uses SPI mode (GPIO 10), not PWM, to avoid conflict with
-the I2S DAC on GPIO 18.
+the I2S DAC on GPIO 18. Driven via `adafruit-circuitpython-neopixel-spi`,
+which works on any Pi without hardware-revision detection (unlike rpi_ws281x,
+whose hard-coded board table rejects new revisions).
 
 ## Key conventions
 
