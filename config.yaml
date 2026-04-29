@@ -23,6 +23,8 @@ led:
   # Strip type: "WS2812" (RGB, 3 channels) or "SK6812" (RGBW, 4 channels).
   strip_type: WS2812
   num_leds: 10
+  # Fade duration (ms) when the LED button ramps the strip on or off.
+  ramp_ms: 400
 
 splitflap:
   # Per-module step offsets for mechanical tuning (filled in during hardware bench)
@@ -36,6 +38,9 @@ hardware:
     snooze_pin: 17
     led_pin: 27
     double_press_ms: 400
+    # Seconds the LEDs stay at full brightness after the button is released
+    # before fading off.
+    led_hold_seconds: 5
   ads1115:
     address: 0x48
     poll_hz: 5

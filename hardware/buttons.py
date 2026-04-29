@@ -33,20 +33,25 @@ class ButtonHandler:
         snooze_pin: int,
         led_pin: int,
         double_press_ms: int,
+        led_hold_seconds: float,
         on_snooze: Callable,
         on_dismiss: Callable,
-        on_led_toggle: Callable,
+        on_led_press: Callable,
+        on_led_release: Callable,
     ):
         self.snooze_pin = snooze_pin
         self.led_pin = led_pin
         self.double_press_window = double_press_ms / 1000.0
+        self._led_hold_seconds = led_hold_seconds
 
         self._on_snooze = on_snooze
         self._on_dismiss = on_dismiss
-        self._on_led_toggle = on_led_toggle
+        self._on_led_press = on_led_press
+        self._on_led_release = on_led_release
 
         self._snooze_last_press = 0.0
         self._snooze_timer: threading.Timer | None = None
+        self._led_off_timer: threading.Timer | None = None
         self._snooze_button: Button | None = None
         self._led_button: Button | None = None
 
@@ -64,6 +69,7 @@ class ButtonHandler:
 
         self._snooze_button.when_pressed = self._snooze_pressed
         self._led_button.when_pressed = self._led_pressed
+        self._led_button.when_released = self._led_released
         logger.info("Button handler ready (snooze=GPIO%d, led=GPIO%d)", snooze_pin, led_pin)
 
     def _snooze_pressed(self) -> None:
@@ -90,12 +96,30 @@ class ButtonHandler:
         threading.Thread(target=self._on_snooze, daemon=True).start()
 
     def _led_pressed(self) -> None:
-        logger.debug("LED button pressed → toggle")
-        threading.Thread(target=self._on_led_toggle, daemon=True).start()
+        # Cancel any pending off-timer from a previous release.
+        if self._led_off_timer is not None:
+            self._led_off_timer.cancel()
+            self._led_off_timer = None
+        logger.debug("LED button pressed → fade on")
+        threading.Thread(target=self._on_led_press, daemon=True).start()
+
+    def _led_released(self) -> None:
+        logger.debug("LED button released → fade off in %.1fs", self._led_hold_seconds)
+        if self._led_off_timer is not None:
+            self._led_off_timer.cancel()
+        self._led_off_timer = threading.Timer(self._led_hold_seconds, self._fire_led_off)
+        self._led_off_timer.start()
+
+    def _fire_led_off(self) -> None:
+        self._led_off_timer = None
+        logger.debug("LED hold expired → fade off")
+        threading.Thread(target=self._on_led_release, daemon=True).start()
 
     def cleanup(self) -> None:
         if self._snooze_timer:
             self._snooze_timer.cancel()
+        if self._led_off_timer:
+            self._led_off_timer.cancel()
         if self._snooze_button is not None:
             self._snooze_button.close()
         if self._led_button is not None:
