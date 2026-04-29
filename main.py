@@ -178,13 +178,16 @@ def main() -> None:
     # ── Buttons ───────────────────────────────────────────────────────────
     from hardware.buttons import ButtonHandler
     hw = cfg["hardware"]["buttons"]
+    led_ramp_ms = cfg.get("led", {}).get("ramp_ms", 500)
     buttons = ButtonHandler(
         snooze_pin=hw["snooze_pin"],
         led_pin=hw["led_pin"],
         double_press_ms=hw["double_press_ms"],
+        led_hold_seconds=hw.get("led_hold_seconds", 5.0),
         on_snooze=alarm_ctrl.snooze,
         on_dismiss=alarm_ctrl.dismiss,
-        on_led_toggle=led.toggle,
+        on_led_press=lambda: led.fade_on(led_ramp_ms),
+        on_led_release=lambda: led.fade_off(led_ramp_ms),
     )
 
     # ── Restore alarm from config ─────────────────────────────────────────
