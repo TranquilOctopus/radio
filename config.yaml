@@ -42,7 +42,7 @@ hardware:
     # before fading off.
     led_hold_seconds: 5
   ads1115:
-    address: 0x48
+    address: 0x49
     poll_hz: 5
   amp:
     address: 0x4B
