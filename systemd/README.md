@@ -107,11 +107,82 @@ python3 -m venv venv
 venv/bin/pip install -r requirements.txt
 ```
 
-## 7. I2C / SPI
+## 7. DAC HAT
+
+Add the following to `/boot/firmware/config.txt` (before the `[pi4]` section if one exists):
+
+```
+dtoverlay=rpi-dacplus
+```
+
+Reboot, then verify the DAC appears:
+
+```bash
+aplay -l   # should show "RPi DAC+" as a card
+```
+
+Configure shairport-sync to output to the DAC — edit `/etc/shairport-sync.conf`:
+
+```
+alsa = {
+    output_device = "hw:DAC";
+};
+```
+
+Set PipeWire's default sink to the DAC so MPD also routes there:
+
+```bash
+pactl set-default-sink alsa_output.platform-soc_sound.stereo-fallback
+```
+
+To persist across reboots, add to `/etc/pipewire/pipewire.conf.d/default-sink.conf`:
+
+```json
+context.properties = {
+    default.audio.sink = "alsa_output.platform-soc_sound.stereo-fallback"
+}
+```
+
+Set DAC output levels to maximum (do once, then store):
+
+```bash
+amixer -c DAC sset Digital 100%
+amixer -c DAC sset Analogue 100%
+amixer -c DAC sset 'Analogue Playback Boost' 1
+sudo alsactl store
+```
+
+## 8. I2C / SPI
 
 Enable in `raspi-config` → Interface Options:
 - I2C → Enable
 - SPI → Enable (for SK6812 LED strip)
 
-Verify I2C devices are visible: `i2cdetect -y 1`
-Expected addresses: 0x20, 0x21, 0x22, 0x23 (PCF8575), 0x48 (ADS1115)
+Add software I2C bus for splitflap modules in `/boot/firmware/config.txt`:
+
+```
+dtoverlay=i2c-gpio,bus=3,i2c_gpio_sda=23,i2c_gpio_scl=24
+```
+
+Bus layout:
+- **Bus 1** (GPIO 2/3): DAC HAT (kernel-managed at 0x4C) only
+- **Bus 3** (GPIO 23/24): PCF8575 × 4 (0x20–0x23), ADS1115 (0x49), MAX9744 (0x4B)
+
+Bus 3 requires external 4.7 kΩ pull-up resistors from SDA and SCL to 3.3 V. All devices must be powered from the Pi's 3.3 V rail (pin 1 or 17).
+
+Solder address pads on PCF8575 boards before connecting (all four default to 0x20 and will lock the bus):
+
+| Module | A0 | A1 | Address |
+|--------|----|----|---------|
+| 0 | — | — | 0x20 |
+| 1 | ● | — | 0x21 |
+| 2 | — | ● | 0x22 |
+| 3 | ● | ● | 0x23 |
+
+Verify bus 3 devices after wiring (connect one at a time):
+
+```bash
+i2cdetect -y 3
+```
+
+Expected addresses: 0x20, 0x21, 0x22, 0x23 (PCF8575), 0x49 (ADS1115), 0x4B (MAX9744)
