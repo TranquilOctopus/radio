@@ -33,7 +33,7 @@ splitflap:
   speed_rpm: 10
 
 hardware:
-  i2c_bus: 3
+  i2c_bus: 1
   buttons:
     snooze_pin: 17
     led_pin: 27
