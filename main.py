@@ -118,6 +118,20 @@ def build_potentiometer(bus, cfg: dict, on_change):
     return pot
 
 
+def build_amp(bus, cfg: dict):
+    from hardware.amp import Amp
+    hw = cfg["hardware"].get("amp", {})
+    address = hw.get("address", 0x4B)
+    max_volume = hw.get("max_volume", 40)
+    if not _any_device_responds(bus, [address]):
+        logger.warning(
+            "MAX9744 not detected at 0x%02X — using mock bus for amp", address
+        )
+        from hardware.mock import MockSMBus
+        bus = MockSMBus()
+    return Amp(bus, address=address, max_volume=max_volume)
+
+
 def main() -> None:
     cfg = load_config()
 
@@ -141,6 +155,8 @@ def main() -> None:
     display = build_display(bus, cfg)
     led = build_led(cfg)
     player = build_player(cfg)
+    amp = build_amp(bus, cfg)
+    amp.set_volume(cfg["radio"].get("volume", 30))
 
     display.init_all()
     display.home_all()
@@ -173,7 +189,7 @@ def main() -> None:
     time_display.force_update()
 
     # ── Potentiometer (volume) ────────────────────────────────────────────
-    pot = build_potentiometer(bus, cfg, on_change=player.set_volume)
+    pot = build_potentiometer(bus, cfg, on_change=amp.set_volume)
 
     # ── Buttons ───────────────────────────────────────────────────────────
     from hardware.buttons import ButtonHandler
@@ -202,6 +218,7 @@ def main() -> None:
         "player": player,
         "display": display,
         "led": led,
+        "amp": amp,
         "scheduler": scheduler,
         "alarm_ctrl": alarm_ctrl,
         "airplay": airplay,
@@ -216,6 +233,7 @@ def main() -> None:
         scheduler.shutdown()
         buttons.cleanup()
         led.turn_off()
+        amp.mute()
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, shutdown)
