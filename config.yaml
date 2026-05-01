@@ -44,3 +44,9 @@ hardware:
   ads1115:
     address: 0x48
     poll_hz: 5
+  amp:
+    address: 0x4B
+    # Hardware gain ceiling, 0–63 in MAX9744 steps. User volumes 0–100 %
+    # are mapped to 0..max_volume so the amp can never run hotter than
+    # this regardless of what any software layer asks for.
+    max_volume: 40

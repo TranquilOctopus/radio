@@ -59,6 +59,7 @@ async def index(request: Request):
 async def get_status():
     player = state.get("player")
     led = state.get("led")
+    amp = state.get("amp")
     alarm_ctrl = state.get("alarm_ctrl")
     scheduler = state.get("scheduler")
     airplay = state.get("airplay")
@@ -72,6 +73,7 @@ async def get_status():
             "snooze_active": scheduler.snooze_active if scheduler else False,
         },
         "radio": player.status() if player else {"state": "unavailable"},
+        "volume": amp.volume if amp else cfg["radio"].get("volume", 0),
         "airplay_active": airplay.is_active if airplay else False,
         "led": {
             "on": led.is_on if led else False,
@@ -205,9 +207,9 @@ class VolumePayload(BaseModel):
 async def set_volume(payload: VolumePayload):
     if not (0 <= payload.level <= 100):
         raise HTTPException(400, "Volume must be 0–100")
-    player = state.get("player")
-    if player:
-        player.set_volume(payload.level)
+    amp = state.get("amp")
+    if amp:
+        amp.set_volume(payload.level)
     cfg = _cfg()
     cfg["radio"]["volume"] = payload.level
     _save_cfg()
