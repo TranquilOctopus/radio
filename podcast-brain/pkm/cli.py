@@ -126,8 +126,26 @@ def query(
     cypher: str = typer.Argument(..., help="Cypher query to run against the Kuzu graph"),
 ) -> None:
     """Run an ad-hoc Cypher query against the knowledge graph."""
-    typer.echo(_NOT_YET)
-    raise typer.Exit(1)
+    from pkm.config import load_config
+    from pkm.store.graph import Graph
+
+    config = load_config()
+    db_path = Path(config.paths.graph_dir)
+
+    with Graph(db_path) as g:
+        g.init_schema()
+        rows = g.query(cypher)
+
+    if not rows:
+        typer.echo("(no results)")
+        return
+
+    cols = list(rows[0].keys())
+    # Print header
+    typer.echo("\t".join(cols))
+    typer.echo("\t".join("-" * len(c) for c in cols))
+    for row in rows:
+        typer.echo("\t".join(str(row[c]) for c in cols))
 
 
 @app.command("serve")
