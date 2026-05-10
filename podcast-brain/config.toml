@@ -106,3 +106,18 @@ api_secret = ""
 user_agent = "podcast-brain/0.1"
 # Cap on episodes pulled per backfill request (PI hard cap is ~1000)
 max_episodes_per_request = 1000
+
+[bot.discord]
+# Set enabled = true and provide a token to run the Discord slash-command bot.
+# Get a token at https://discord.com/developers/applications -> Bot -> Reset Token.
+# Then invite the bot to your server with applications.commands + bot scopes.
+enabled = false
+token = ""
+# The bot connects to the dashboard's REST API at this URL. Co-locate the bot
+# with the dashboard on the same machine and leave this at the default — the
+# dashboard has no auth, so it must stay bound to localhost.
+api_base_url = "http://127.0.0.1:8765"
+# Restrict commands to specific Discord user IDs. Empty = anyone in the
+# bot's reachable scope. Get your user ID by enabling Developer Mode in
+# Discord settings and right-clicking your name -> Copy User ID.
+allowed_user_ids = []

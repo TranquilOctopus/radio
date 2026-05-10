@@ -86,6 +86,17 @@ class ChunkerConfig(BaseModel):
     overlap_seconds: int = 15
 
 
+class DiscordBotConfig(BaseModel):
+    enabled: bool = False
+    token: str = ""
+    api_base_url: str = "http://127.0.0.1:8765"
+    allowed_user_ids: list[int] = Field(default_factory=list)
+
+
+class BotConfig(BaseModel):
+    discord: DiscordBotConfig = Field(default_factory=DiscordBotConfig)
+
+
 class Config(BaseModel):
     paths: PathsConfig = Field(default_factory=PathsConfig)
     compute: ComputeConfig = Field(default_factory=ComputeConfig)
@@ -97,6 +108,7 @@ class Config(BaseModel):
     summarize: SummarizeConfig = Field(default_factory=SummarizeConfig)
     ingest: IngestConfig = Field(default_factory=IngestConfig)
     chunker: ChunkerConfig = Field(default_factory=ChunkerConfig)
+    bot: BotConfig = Field(default_factory=BotConfig)
 
 
 # Config is not cached: callers re-read at runtime so edits take effect without restart.

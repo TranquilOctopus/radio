@@ -252,6 +252,7 @@ total < 16 GiB, it serializes Whisper unload before LLM load. Override via
 | Full back-catalog | `feed backfill <slug> [--from YYYY]` (via PodcastIndex API) |
 | One-off URL | `url add <youtube/soundcloud/episode-page-url>` (via yt-dlp) |
 | Manual file drop | `inbox watch <dir>` daemon, or drop into the configured watch dir |
+| Discord bot | `/feed add`, `/feed search`, `/url` — see "Optional: Discord bot" below |
 
 **Out of scope** (DRM / ToS): Apple Podcasts Subscriptions paid feeds,
 Patreon-locked feeds, Spotify exclusives.
@@ -291,6 +292,93 @@ the corpus.
 
 For database-style queries over the vault, install Obsidian's Dataview plugin —
 e.g. "all episodes mentioning concept X", "unresolved predictions by speaker Y".
+
+## Optional: Discord bot
+
+A slash-command Discord bot that talks to the local FastAPI dashboard, so you
+can add feeds, check status, and read the weekly digest from your phone.
+
+The bot and dashboard are designed to live on the same machine — the dashboard
+stays bound to `127.0.0.1` (no auth), and the bot connects over localhost.
+
+### Setup
+
+1. Install the extra: `pip install -e .[discord]`
+2. Create a Discord application and bot at
+   <https://discord.com/developers/applications> → New Application → Bot →
+   Reset Token. Copy the token.
+3. Invite the bot to your server: under OAuth2 → URL Generator, tick
+   `bot` and `applications.commands` scopes, then `Send Messages` permission.
+   Open the generated URL and authorise it for your server.
+4. Find your Discord user ID: enable Developer Mode in Discord settings
+   (App Settings → Advanced → Developer Mode), then right-click your name
+   → Copy User ID.
+5. Configure `[bot.discord]` in `config.toml`:
+
+   ```toml
+   [bot.discord]
+   enabled = true
+   token = "PASTE_TOKEN_HERE"
+   api_base_url = "http://127.0.0.1:8765"
+   allowed_user_ids = [123456789012345678]   # your Discord user ID
+   ```
+
+6. Make sure the dashboard is running (`podcast-brain serve`), then:
+
+   ```bash
+   podcast-brain bot discord
+   ```
+
+   On first run, slash commands take up to ~1 hour to propagate globally
+   the first time; restart your Discord client to refresh sooner.
+
+### Slash commands
+
+| Command | What it does |
+|---|---|
+| `/feed add <url> [style]` | Subscribe to an RSS or Apple Podcasts URL |
+| `/feed search <name>` | iTunes search; replies with candidates and a copy-pasteable `/feed add` line for each |
+| `/feed list` | Subscribed feeds with style + pending job count |
+| `/feed style <slug> <style>` | Change a feed's style (`informational` / `banter` / `narrative` / `skip`) |
+| `/queue status` | Counts of jobs by pipeline status |
+| `/queue jobs [status] [limit]` | Recent jobs, optionally filtered by status |
+| `/budget` | MTD Claude spend with per-model breakdown |
+| `/digest` | Latest weekly digest (truncated to fit Discord's 2000-char limit) |
+| `/url <url> [style]` | One-off ingest via yt-dlp (YouTube etc.) |
+
+### Run as a service
+
+The bot is a long-running foreground process — supervise it the same way as
+the daemon. Example systemd user unit (`~/.config/systemd/user/podcast-brain-bot.service`):
+
+```ini
+[Unit]
+Description=podcast-brain Discord bot
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/YOU/podcast-brain
+ExecStart=/home/YOU/podcast-brain/.venv/bin/podcast-brain bot discord
+Restart=on-failure
+RestartSec=30s
+
+[Install]
+WantedBy=default.target
+```
+
+`systemctl --user enable --now podcast-brain-bot.service`. Logs via
+`journalctl --user -u podcast-brain-bot -f`.
+
+### Security caveats
+
+- The dashboard has **no authentication**. It MUST stay bound to `127.0.0.1`
+  (the default). If you ever change `--host`, add an auth layer first.
+- `allowed_user_ids` is the only access control on the bot. Leaving it empty
+  means anyone in any channel where the bot is present can issue commands and
+  burn your Claude budget. **Always set it** to your own user IDs.
+- Use a private Discord server where you control the membership; don't add the
+  bot to a public server.
 
 ## Optional: Notion mirror
 

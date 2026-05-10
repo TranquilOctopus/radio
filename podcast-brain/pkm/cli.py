@@ -9,11 +9,13 @@ feed_app = typer.Typer(help="Manage podcast feed subscriptions.")
 ingest_app = typer.Typer(help="Run the ingestion pipeline.")
 inbox_app = typer.Typer(help="Watch a folder for manually-dropped audio files.")
 url_app = typer.Typer(help="Ingest one-off URLs (YouTube, SoundCloud, episode pages).")
+bot_app = typer.Typer(help="Chat-bot frontends.")
 
 app.add_typer(feed_app, name="feed")
 app.add_typer(ingest_app, name="ingest")
 app.add_typer(inbox_app, name="inbox")
 app.add_typer(url_app, name="url")
+app.add_typer(bot_app, name="bot")
 
 _NOT_YET = "not yet implemented"
 
@@ -23,58 +25,10 @@ _NOT_YET = "not yet implemented"
 # ---------------------------------------------------------------------------
 
 
-_VALID_STYLES = ["informational", "banter", "narrative", "skip"]
-_AUTO_STYLE_SENTINEL = "__pending_classification"
+from pkm.ingest.subscribe import VALID_STYLES as _VALID_STYLES_TUPLE
+from pkm.ingest.subscribe import add_feed_from_url as _add_feed_from_url
 
-
-def _add_feed_from_url(
-    feed_url: str,
-    *,
-    requested_style: str | None,
-    auto_style: bool,
-    config_path: Path | None = None,
-) -> tuple[int, str, str]:
-    from slugify import slugify
-
-    from pkm.config import load_config
-    from pkm.ingest.podcastindex import PodcastIndex
-    from pkm.queue import FeedRow, Queue
-
-    config = load_config(config_path)
-    style = (
-        _AUTO_STYLE_SENTINEL if auto_style
-        else (requested_style or "informational")
-    )
-
-    pi_id: int | None = None
-    itunes_id: int | None = None
-    title = feed_url
-    language: str | None = None
-
-    if config.ingest.podcastindex.api_key and config.ingest.podcastindex.api_secret:
-        pi = PodcastIndex(config.ingest.podcastindex)
-        info = pi.lookup_by_feed_url(feed_url)
-        if info:
-            pi_id = info.feed_id
-            itunes_id = info.itunes_id
-            title = info.title or title
-            language = info.language
-
-    slug = slugify(title, max_length=60)
-    with Queue(Path(config.paths.db_path)) as q:
-        q.init_schema()
-        feed_id = q.upsert_feed(
-            FeedRow(
-                feed_url=feed_url,
-                podcast_index_id=pi_id,
-                itunes_id=itunes_id,
-                title=title,
-                podcast_slug=slug,
-                style=style,
-                language=language,
-            )
-        )
-    return feed_id, slug, style
+_VALID_STYLES = list(_VALID_STYLES_TUPLE)
 
 
 @feed_app.command("add")
@@ -602,6 +556,27 @@ def budget() -> None:
                     f"cache_r={row['cache_read_tokens']}, cache_w={row['cache_write_tokens']}, "
                     f"${row['cost_usd']:.4f}"
                 )
+
+
+@bot_app.command("discord")
+def bot_discord() -> None:
+    """Run the Discord slash-command bot. Reads token + allowed user IDs from [bot.discord]."""
+    from pkm.bot.discord_bot import run_bot
+    from pkm.config import load_config
+
+    config = load_config()
+    if not config.bot.discord.token:
+        typer.echo(
+            "No Discord token configured. Set [bot.discord] token in config.toml. "
+            "Get a token at https://discord.com/developers/applications -> Bot."
+        )
+        raise typer.Exit(1)
+    typer.echo(f"Starting Discord bot, dashboard at {config.bot.discord.api_base_url}")
+    run_bot(
+        token=config.bot.discord.token,
+        api_base_url=config.bot.discord.api_base_url,
+        allowed_user_ids=config.bot.discord.allowed_user_ids,
+    )
 
 
 if __name__ == "__main__":

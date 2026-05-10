@@ -110,6 +110,24 @@ class FileSubmit(BaseModel):
     style: Literal["informational", "banter", "narrative", "skip"] = "informational"
 
 
+class FeedAdd(BaseModel):
+    url: str
+    style: Literal["informational", "banter", "narrative", "skip"] = "informational"
+
+
+class FeedSearchResult(BaseModel):
+    itunes_id: int
+    name: str
+    artist: str | None
+    feed_url: str
+
+
+class DigestView(BaseModel):
+    week: str  # YYYY-Www
+    path: str
+    markdown: str
+
+
 # ---------------------------------------------------------------------------
 # Synthetic feed helpers (matches conventions in inbox.py / url.py)
 # ---------------------------------------------------------------------------
@@ -218,6 +236,55 @@ def create_app(config_path: Path | None = None) -> FastAPI:
                 )
             )
         return out
+
+    @app.post("/api/feeds")
+    def feed_add(
+        body: FeedAdd,
+        config: Config = Depends(get_config),
+    ) -> dict:
+        from pkm.ingest.subscribe import add_feed_from_url, resolve_input_to_feed_url
+
+        feed_url = resolve_input_to_feed_url(body.url, config=config)
+        if feed_url is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Input is not a recognised RSS or Apple Podcasts URL. "
+                "Use /api/feeds/search for show-name lookups.",
+            )
+        try:
+            feed_id, slug, _ = add_feed_from_url(
+                feed_url, requested_style=body.style, auto_style=False, config=config,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Add failed: {exc}")
+        return {"feed_id": feed_id, "slug": slug, "style": body.style, "feed_url": feed_url}
+
+    @app.get("/api/feeds/search", response_model=list[FeedSearchResult])
+    def feed_search(term: str, limit: int = 5) -> list[FeedSearchResult]:
+        from pkm.ingest.itunes import search_podcast
+
+        limit = max(1, min(limit, 20))
+        results = search_podcast(term, limit=limit)
+        return [
+            FeedSearchResult(
+                itunes_id=r.collection_id, name=r.collection_name,
+                artist=r.artist_name, feed_url=r.feed_url,
+            )
+            for r in results
+        ]
+
+    @app.get("/api/digest/latest", response_model=DigestView)
+    def digest_latest(config: Config = Depends(get_config)) -> DigestView:
+        digests_dir = Path(config.paths.vault_dir) / "digests" / "weekly"
+        if not digests_dir.exists():
+            raise HTTPException(status_code=404, detail="No digests yet")
+        files = sorted(digests_dir.glob("*.md"))
+        if not files:
+            raise HTTPException(status_code=404, detail="No digests yet")
+        latest = files[-1]
+        return DigestView(
+            week=latest.stem, path=str(latest), markdown=latest.read_text(encoding="utf-8"),
+        )
 
     @app.post("/api/feeds/{feed_id}/style")
     def feed_set_style(

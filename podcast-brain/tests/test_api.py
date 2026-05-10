@@ -228,6 +228,76 @@ def test_submit_url_enqueues_and_calls_background(client: TestClient, tmp_worksp
         assert row[1].startswith("file://")
 
 
+def test_feed_add_via_api_with_rss_url(client: TestClient, tmp_workspace) -> None:
+    _, db_path = tmp_workspace
+    with patch("pkm.ingest.subscribe.PodcastIndex"):
+        # Without PI credentials configured (default), we skip the lookup —
+        # so PodcastIndex isn't actually called; the patch is just defensive.
+        r = client.post(
+            "/api/feeds",
+            json={"url": "https://example.com/feed.xml", "style": "informational"},
+        )
+    assert r.status_code == 200
+    body = r.json()
+    assert "feed_id" in body
+    assert body["slug"]
+
+    with Queue(db_path) as q:
+        feeds = q.list_feeds()
+        assert any(f.feed_url == "https://example.com/feed.xml" for f in feeds)
+
+
+def test_feed_add_rejects_show_name(client: TestClient) -> None:
+    r = client.post("/api/feeds", json={"url": "Lex Fridman"})
+    assert r.status_code == 400
+
+
+def test_feed_add_resolves_apple_url(client: TestClient, tmp_workspace) -> None:
+    fake = MagicMock(feed_url="https://example.com/resolved.xml")
+    with patch("pkm.ingest.subscribe.resolve_apple_podcasts_url", return_value=fake):
+        r = client.post(
+            "/api/feeds",
+            json={"url": "https://podcasts.apple.com/us/podcast/foo/id1234567890"},
+        )
+    assert r.status_code == 200
+    assert r.json()["feed_url"] == "https://example.com/resolved.xml"
+
+
+def test_feed_search_returns_candidates(client: TestClient) -> None:
+    fake_results = [
+        MagicMock(collection_id=111, collection_name="Show One",
+                  artist_name="A", feed_url="https://a.example/rss"),
+        MagicMock(collection_id=222, collection_name="Show Two",
+                  artist_name="B", feed_url="https://b.example/rss"),
+    ]
+    with patch("pkm.ingest.itunes.search_podcast", return_value=fake_results):
+        r = client.get("/api/feeds/search?term=test&limit=2")
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body) == 2
+    assert body[0]["itunes_id"] == 111
+    assert body[1]["name"] == "Show Two"
+
+
+def test_digest_latest_returns_404_when_empty(client: TestClient) -> None:
+    r = client.get("/api/digest/latest")
+    assert r.status_code == 404
+
+
+def test_digest_latest_returns_most_recent(client: TestClient, tmp_workspace, tmp_path) -> None:
+    # The vault dir is under tmp_path per the fixture; create digest files there.
+    digests = tmp_path / "vault" / "digests" / "weekly"
+    digests.mkdir(parents=True)
+    (digests / "2026-W17.md").write_text("# Week 17\nOlder digest")
+    (digests / "2026-W18.md").write_text("# Week 18\nNewer digest")
+
+    r = client.get("/api/digest/latest")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["week"] == "2026-W18"
+    assert "Newer digest" in body["markdown"]
+
+
 def test_submit_url_dedupes(client: TestClient, tmp_workspace) -> None:
     fake_audio = MagicMock(
         title="t", audio_path=Path("/tmp/x.mp3"), duration_s=10,

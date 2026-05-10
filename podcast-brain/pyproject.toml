@@ -28,6 +28,7 @@ mac  = ["mlx-whisper>=0.3", "torch>=2.2"]
 cuda = ["faster-whisper>=1.0", "torch>=2.2"]
 cpu  = ["faster-whisper>=1.0", "torch>=2.2"]
 url  = ["yt-dlp>=2024.10.0"]
+discord = ["discord.py>=2.4"]
 dev  = ["pytest>=8", "respx>=0.21"]
 
 [project.scripts]
