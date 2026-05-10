@@ -1,0 +1,372 @@
+# podcast-brain
+
+A personal podcast knowledge system. Pipes podcast audio through on-device
+transcription and a local LLM, then emits an Obsidian-compatible markdown
+vault backed by a Kuzu graph that surfaces cross-source connections. Cloud
+Claude calls (Sonnet) only at the per-episode summary and weekly synthesis
+level, with prompt caching and a hard monthly budget cap.
+
+No conversational chat layer — output is a browsable, diffable, git-versioned
+vault you read in Obsidian (or any markdown editor).
+
+## Architecture
+
+```
+PodcastIndex / RSS / OPML / URL ──► inbox ──► transcribe (Whisper, GPU)
+                                  │
+                                  ▼
+                              chunk (sentence-aligned, ~3-min windows)
+                                  │
+                          ┌───────┴────────┐
+                          ▼                ▼
+            extract (local LLM)    summarize (Sonnet, once per episode)
+            entities/claims              │
+                          │              │
+                          └──────┬───────┘
+                                 ▼
+              ┌──────────────────┴──────────────────┐
+              ▼                                     ▼
+      Kuzu graph                            Obsidian vault (primary surface)
+      (nodes/edges)                         vault/{episodes,people,concepts,claims,digests}
+              │
+              ▼
+      weekly synthesizer (Sonnet) → digests + concept pages with backlinks
+```
+
+The vault directory is itself a git repo — every ingest run can commit, so you
+get history and can diff what the system added.
+
+## Quickstart
+
+### 1. Install
+
+Pick the extra that matches your hardware:
+
+```bash
+# macOS Apple Silicon
+pip install -e .[mac]
+
+# Linux + NVIDIA CUDA
+pip install -e .[cuda]
+
+# CPU-only (slow; CI / no-GPU dev)
+pip install -e .[cpu]
+
+# Optional: yt-dlp for ingesting one-off URLs (YouTube, SoundCloud)
+pip install -e .[url]
+
+# Dev: tests
+pip install -e .[dev]
+```
+
+System dependencies the package does NOT install:
+
+- `ffmpeg` — required for `yt-dlp` audio extraction (only if you use `url add`)
+- `ollama` — required for the local LLM extractor (default backend)
+
+### 2. Configure
+
+Copy `config.toml` to your working directory and edit. Two fields are required
+for full functionality, the rest have sensible defaults:
+
+```toml
+[ingest.podcastindex]
+api_key = "..."        # free credentials at https://podcastindex.org/signup
+api_secret = "..."
+
+[budget]
+monthly_cap_usd = 20.0  # hard cap on Claude spend
+```
+
+Without PodcastIndex credentials you can still use direct RSS URLs and
+Apple Podcasts share URLs, but `feed backfill` (full historical episodes)
+will refuse to run.
+
+### 3. Install ollama and pull a model
+
+```bash
+# https://ollama.com — install for your OS
+ollama pull qwen2.5:14b-instruct-q4_K_M    # default, ~9 GB
+# or for tighter VRAM:
+ollama pull llama3.1:8b-instruct-q4_K_M    # ~5 GB
+```
+
+Edit `[extract] local_model` in `config.toml` if you picked a different model.
+
+### 4. Add feeds
+
+```bash
+# By RSS URL
+podcast-brain feed add https://example.com/podcast/rss
+
+# By Apple Podcasts share URL
+podcast-brain feed add 'https://podcasts.apple.com/us/podcast/foo/id1234567890'
+
+# By show name (interactive prompt picks from iTunes search)
+podcast-brain feed add "Lex Fridman"
+
+# Bulk import from a podcast app (Apple Podcasts, Overcast, Pocket Casts...)
+podcast-brain feed import library.opml
+```
+
+Each feed has a `style` that controls extraction: `informational` (default;
+interview/lecture/news), `banter` (chat/comedy — quotes only, not claims),
+`narrative` (serial storytelling), or `skip` (record subscription, don't
+summarize). Override with `--style <s>` on add, or later via
+`podcast-brain feed style <slug> <style>`.
+
+### 5. Pull historical episodes
+
+```bash
+podcast-brain feed backfill lex-fridman --from 2023
+```
+
+Episodes land in a backlog queue. The pacer (configured in `[backlog]`) trickles
+them into the pipeline at `max_episodes_per_day` with `per_show_daily_cap`
+fairness so one prolific show doesn't monopolize.
+
+### 6. Run the pipeline
+
+```bash
+# One-shot: process everything pending and exit
+podcast-brain ingest now
+
+# Long-running daemon: poll feeds + advance pipeline + weekly digest cron
+podcast-brain ingest daemon
+```
+
+### 7. Read the output
+
+```bash
+# Open the vault directory in Obsidian (or any markdown editor)
+open vault/
+
+# Live status dashboard
+podcast-brain serve   # then http://127.0.0.1:8765
+
+# Ad-hoc graph queries (Cypher)
+podcast-brain query 'MATCH (e:Episode)-[:CONTAINS]->(c:Claim) RETURN count(c)'
+
+# Month-to-date Claude spend
+podcast-brain budget
+```
+
+## CLI reference
+
+```
+podcast-brain feed add <rss-url | show-name | apple-podcasts-url> [--style <s>] [--auto-style]
+podcast-brain feed style <show> <informational|banter|narrative|skip>
+podcast-brain feed import <opml-file>
+podcast-brain feed backfill <show> [--from YYYY]
+
+podcast-brain ingest now              # one-shot
+podcast-brain ingest daemon           # long-running
+
+podcast-brain transcribe <audio-file> # standalone Whisper, no pipeline
+
+podcast-brain digest weekly [--week YYYY-Www]   # default: previous week
+
+podcast-brain query "<cypher>"        # ad-hoc graph query
+
+podcast-brain inbox watch <dir>       # daemon: pick up dropped audio files
+
+podcast-brain url add <url>           # one-off via yt-dlp
+
+podcast-brain serve [--host H] [--port N]   # FastAPI dashboard
+
+podcast-brain budget                  # MTD Claude spend
+```
+
+## Configuration
+
+`config.toml` sections:
+
+| Section | Purpose |
+|---|---|
+| `[paths]` | Where audio, transcripts, graph, queue DB, and vault live. |
+| `[compute]` | Whisper backend (`auto`/`mlx`/`faster-whisper-cuda`/`faster-whisper-cpu`), Whisper model, PyTorch device, model serialization. |
+| `[backlog]` | Daily release cap and per-show fairness for back-catalog ingest. |
+| `[extract]` | LLM extraction backend (`local` via ollama or `claude` via Haiku). Local model + endpoint. JSON mode. |
+| `[summarize]` | Episode summary length, weekly digest length, banter exclusion. |
+| `[transcribe]` | Diarization, language hint, summary language preference. |
+| `[chunker]` | Chunk window length and overlap. |
+| `[budget]` | Monthly USD cap, warn threshold, summarize model. |
+| `[notion]` | Optional Notion mirror (off by default). |
+| `[ingest.podcastindex]` | PodcastIndex API credentials. |
+| `[ingest.inbox]` | Watch-folder defaults. |
+
+The full annotated `config.toml` ships in the repo with comments on every
+field.
+
+## Per-episode state machine
+
+```
+PENDING → DOWNLOADED → TRANSCRIBED → CHUNKED → EXTRACTED → CANONICALIZED → SUMMARIZED → INDEXED → DONE
+                                                                                               ↘ FAILED  (any stage; retryable)
+                                                                                               ↘ BUDGET_PAUSED (cap hit)
+```
+
+Stages are idempotent — every intermediate artifact is written atomically to
+disk under `data/`, so killing the process mid-run and restarting picks up
+exactly where it left off. A `BUDGET_PAUSED` job is terminal for the daemon
+(won't auto-retry); clear it manually after raising the cap or letting the
+month roll over.
+
+## Show styles
+
+Different podcasts call for different extraction. Each feed carries a `style`:
+
+| Style | Extracts | Skips | Goes to weekly digest? |
+|---|---|---|---|
+| `informational` (default) | People, orgs, concepts, claims, predictions | — | Yes |
+| `banter` | Quotes, mentions, vibe summary | Claims, predictions, concept extraction | No (by default) |
+| `narrative` | Chronology, characters, arc notes | Per-chunk claims | Yes (arc-aware template) |
+| `skip` | Nothing | Everything | No |
+
+Auto-classification on first ingest is stubbed (`__pending_classification`
+sentinel maps to `informational` for now); the hook in `pkm/extract/classify.py`
+is the place to wire a real classifier later.
+
+## Hardware notes
+
+| Platform | Whisper backend | LLM backend | VRAM serialization |
+|---|---|---|---|
+| Linux + NVIDIA 12 GB (e.g. 3080 Ti) | `faster-whisper` CUDA | ollama (CUDA) | **On.** Whisper unloads before LLM loads. Auto-detected. |
+| Linux + NVIDIA 16+ GB | `faster-whisper` CUDA | ollama (CUDA) | Off. Both resident. |
+| macOS Apple Silicon (16 GB+ unified memory) | `mlx-whisper` | ollama (Metal) | Off. Unified memory. |
+| macOS Apple Silicon 8 GB | `mlx-whisper` | ollama (8B model recommended) | Off (no equivalent constraint). |
+| CPU-only | `faster-whisper` CPU | ollama CPU | Off. Slow. |
+
+The pipeline calls `torch.cuda.mem_get_info()` to detect VRAM at startup; if
+total < 16 GiB, it serializes Whisper unload before LLM load. Override via
+`[compute] serialize_models = "true" | "false" | "auto"`.
+
+## Sources
+
+| Source | How |
+|---|---|
+| RSS feed | `feed add <rss-url>` |
+| Apple Podcasts share URL | `feed add 'https://podcasts.apple.com/.../id<N>'` (resolved via iTunes Lookup) |
+| Show name | `feed add "Show Name"` (interactive iTunes search) |
+| OPML export | `feed import library.opml` (Apple Podcasts, Overcast, Pocket Casts, AntennaPod) |
+| Full back-catalog | `feed backfill <slug> [--from YYYY]` (via PodcastIndex API) |
+| One-off URL | `url add <youtube/soundcloud/episode-page-url>` (via yt-dlp) |
+| Manual file drop | `inbox watch <dir>` daemon, or drop into the configured watch dir |
+
+**Out of scope** (DRM / ToS): Apple Podcasts Subscriptions paid feeds,
+Patreon-locked feeds, Spotify exclusives.
+
+## Cost controls
+
+- All Claude calls go through `pkm/budget.py:BudgetTracker` which records every
+  call (model, input/output tokens, cache read/write, USD) into the
+  `claude_calls` table.
+- `[budget] monthly_cap_usd` is enforced before each Sonnet call. When the
+  projected cost would push month-to-date over the cap, the job is marked
+  `BUDGET_PAUSED` and the pipeline skips it.
+- Local LLM extraction is the high-volume path (potentially hundreds of chunks
+  per episode) and is free; only the once-per-episode summary and once-per-week
+  synthesis hit Sonnet. Order-of-magnitude estimate at 30 hr/week: $5-15/week.
+- `podcast-brain budget` shows MTD spend, cap, percentage used, and a per-model
+  breakdown.
+
+## Reading the vault
+
+The vault is plain markdown with YAML frontmatter and `[[wikilinks]]` —
+opens natively in Obsidian, Logseq, or any compatible editor. Layout:
+
+```
+vault/
+├── episodes/<show-slug>/<YYYY-MM-DD>-<title-slug>.md
+├── people/<slug>.md
+├── concepts/<slug>.md
+├── organizations/<slug>.md
+├── claims/<hash>.md
+└── digests/weekly/<YYYY-Www>.md
+```
+
+Backlinks (the "Mentioned in" sections on people/concept pages) are regenerated
+from the Kuzu graph on each ingest, so they always reflect the current state of
+the corpus.
+
+For database-style queries over the vault, install Obsidian's Dataview plugin —
+e.g. "all episodes mentioning concept X", "unresolved predictions by speaker Y".
+
+## Optional: Notion mirror
+
+Notion is supported as a secondary output sink (off by default). Set
+`[notion] enabled = true` and provide an integration token + database IDs
+to push episode summaries and weekly digests to Notion in addition to the
+markdown vault. The vault remains canonical.
+
+## Tests
+
+```bash
+pip install -e .[dev]
+python -m pytest tests/ -v
+```
+
+The suite is hermetic — no live Anthropic API calls, no live ollama, no
+network. Whisper, ollama, and Anthropic clients are all mocked.
+
+## Future work
+
+Architecturally allowed-for but not in v1:
+
+- **Semantic retrieval over the transcript corpus.** Embed transcripts with a
+  local sentence-transformer, store in LanceDB, query via `query semantic
+  "<text>"`. Push mode: nightly job reads project notes from the vault, embeds
+  them as queries, writes back "Related from podcasts" callouts.
+- **Speaker prediction tracking.** Diarize, identify speakers, capture
+  forward-looking claims, evaluate them when their timeframe elapses, score
+  speakers via Brier. Tetlock for podcast pundits.
+- **macOS Apple Podcasts library sync.** Read the local SQLite library directly
+  to auto-import subscriptions and play positions (currently OPML-only).
+- **Auto-style classification.** Wire `pkm/extract/classify.py` to detect
+  whether a feed is informational/banter/narrative on first ingest; for now
+  defaults to `informational`.
+- **HomeKit / iOS shortcut** for adding URLs from phone.
+- **"Listen radar"** — daily digest of which queued episodes look most relevant
+  to current projects.
+
+## Repo layout
+
+```
+podcast-brain/
+├── pyproject.toml
+├── config.toml             # annotated example
+├── pkm/
+│   ├── cli.py              # typer entrypoints
+│   ├── pipeline.py         # state machine
+│   ├── queue.py            # SQLite queue + feeds + claude_calls
+│   ├── budget.py           # spend tracker + cap enforcement
+│   ├── api.py              # FastAPI dashboard
+│   ├── ingest/
+│   │   ├── podcastindex.py # PodcastIndex API (HMAC auth)
+│   │   ├── itunes.py       # iTunes Search + Lookup, Apple URL resolver
+│   │   ├── rss.py          # feedparser + conditional GET
+│   │   ├── opml.py         # OPML walker (flat + nested)
+│   │   ├── pacer.py        # backlog rate-limited release
+│   │   ├── url.py          # yt-dlp wrapper
+│   │   └── inbox.py        # watchdog folder watcher
+│   ├── transcribe/
+│   │   ├── base.py         # WhisperBackend protocol + auto-detect
+│   │   ├── faster_whisper.py # CUDA / CPU
+│   │   └── mlx_whisper.py  # Apple Silicon
+│   ├── extract/
+│   │   ├── chunker.py      # sentence-aligned ~3min windows
+│   │   ├── base.py         # Extractor protocol
+│   │   ├── local.py        # ollama via /api/chat with json_schema
+│   │   ├── canonicalize.py # entity dedupe (slug + Levenshtein)
+│   │   ├── schemas/        # pydantic models per style
+│   │   └── prompts/styles/ # per-style system prompts
+│   ├── summarize/
+│   │   ├── episode.py      # Sonnet w/ prompt caching
+│   │   ├── synthesize.py   # weekly cross-episode digest
+│   │   └── prompts/        # per-style + weekly templates
+│   └── store/
+│       ├── graph.py        # Kuzu schema + upserts
+│       └── vault.py        # markdown writer w/ frontmatter + wikilinks
+├── data/                   # gitignored: audio, transcripts, graph DB, queue
+└── vault/                  # the readable output (own git repo recommended)
+```
