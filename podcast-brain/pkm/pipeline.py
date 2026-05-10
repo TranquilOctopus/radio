@@ -188,7 +188,9 @@ class Pipeline:
 
     def _get_budget(self) -> BudgetTracker:
         if self._budget is None:
-            self._budget = BudgetTracker(Path(self._config.paths.db_path))
+            self._budget = BudgetTracker(
+                Path(self._config.paths.db_path), self._config.budget
+            )
         return self._budget
 
     # ------------------------------------------------------------------

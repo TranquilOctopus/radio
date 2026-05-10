@@ -413,8 +413,30 @@ def serve() -> None:
 @app.command("budget")
 def budget() -> None:
     """Show month-to-date Claude API spend."""
-    typer.echo(_NOT_YET)
-    raise typer.Exit(1)
+    from pkm.budget import BudgetTracker
+    from pkm.config import load_config
+
+    config = load_config()
+    with BudgetTracker(Path(config.paths.db_path), config.budget) as t:
+        spend = t.mtd_spend_usd()
+        cap = config.budget.monthly_cap_usd
+        remaining = t.mtd_remaining_usd()
+        typer.echo(f"Month-to-date Claude spend: ${spend:.4f}")
+        if cap > 0:
+            pct = (spend / cap) * 100 if cap else 0
+            typer.echo(f"Monthly cap: ${cap:.2f} ({pct:.1f}% used, ${remaining:.4f} remaining)")
+        else:
+            typer.echo("Monthly cap: unlimited")
+        breakdown = t.usage_breakdown()
+        if breakdown:
+            typer.echo("\nBy model:")
+            for row in breakdown:
+                typer.echo(
+                    f"  {row['model']}: {row['calls']} calls, "
+                    f"in={row['input_tokens']}, out={row['output_tokens']}, "
+                    f"cache_r={row['cache_read_tokens']}, cache_w={row['cache_write_tokens']}, "
+                    f"${row['cost_usd']:.4f}"
+                )
 
 
 if __name__ == "__main__":
