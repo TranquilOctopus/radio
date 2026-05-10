@@ -309,7 +309,207 @@ python -m pytest tests/ -v
 The suite is hermetic — no live Anthropic API calls, no live ollama, no
 network. Whisper, ollama, and Anthropic clients are all mocked.
 
+## Operating it
+
+### Day-to-day workflow
+
+The intended steady-state is:
+
+1. **Daemon runs continuously** in the background. Polls feeds every 30 min,
+   advances the pipeline every 5 min, runs a weekly digest Sunday 8 AM (local
+   time).
+2. **You add feeds when you discover new shows.** Run `feed add` from anywhere
+   — the daemon picks up the new feed on its next poll cycle.
+3. **You read the vault** in Obsidian whenever you want. New episode pages
+   appear as the pipeline finishes them.
+4. **Sunday morning the digest is waiting** at `vault/digests/weekly/<YYYY-Www>.md`.
+5. **Periodically commit the vault** to git so you have history.
+
+### Running the daemon as a service
+
+The daemon is a long-running foreground process — `podcast-brain ingest daemon`.
+For real use, supervise it.
+
+**macOS (launchd):** create `~/Library/LaunchAgents/com.podcast-brain.daemon.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.podcast-brain.daemon</string>
+    <key>WorkingDirectory</key><string>/Users/YOU/podcast-brain</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/YOU/podcast-brain/.venv/bin/podcast-brain</string>
+        <string>ingest</string>
+        <string>daemon</string>
+    </array>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>StandardOutPath</key><string>/Users/YOU/podcast-brain/logs/daemon.log</string>
+    <key>StandardErrorPath</key><string>/Users/YOU/podcast-brain/logs/daemon.err</string>
+</dict>
+</plist>
+```
+
+Load with `launchctl load ~/Library/LaunchAgents/com.podcast-brain.daemon.plist`.
+
+**Linux (systemd user unit):** create `~/.config/systemd/user/podcast-brain.service`:
+
+```ini
+[Unit]
+Description=podcast-brain ingest daemon
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/YOU/podcast-brain
+ExecStart=/home/YOU/podcast-brain/.venv/bin/podcast-brain ingest daemon
+Restart=on-failure
+RestartSec=30s
+
+[Install]
+WantedBy=default.target
+```
+
+Enable with `systemctl --user enable --now podcast-brain.service`. Logs via
+`journalctl --user -u podcast-brain -f`.
+
+The dashboard (`podcast-brain serve`) is a separate process — run it the same
+way under a second service unit, or just spin it up ad-hoc when you want to
+look at status.
+
+### Status and monitoring
+
+- **Dashboard** — `podcast-brain serve`, then `http://127.0.0.1:8765`. Shows
+  queue counts, recent jobs, feeds, MTD spend. Auto-refreshes every 30 s.
+- **Budget** — `podcast-brain budget` prints MTD spend with a per-model
+  breakdown. Run as a daily cron if you want a paper trail.
+- **Ad-hoc graph queries** — `podcast-brain query "<cypher>"`. Examples:
+
+  ```bash
+  # How many episodes per podcast?
+  podcast-brain query 'MATCH (e:Episode) RETURN e.podcast, count(*) ORDER BY count(*) DESC'
+
+  # Concepts mentioned in 3+ episodes
+  podcast-brain query 'MATCH (e:Episode)-[:MENTIONS]->(c:Concept) WITH c, count(DISTINCT e) AS n WHERE n >= 3 RETURN c.name, n ORDER BY n DESC'
+
+  # Recent failures
+  podcast-brain query 'MATCH (e:Episode) RETURN e.id, e.title LIMIT 5'  # (graph view)
+  ```
+
+  For job-level inspection (which jobs failed and why), open the SQLite queue
+  directly: `sqlite3 data/jobs.db "SELECT id, episode_title, status, last_error FROM jobs WHERE status = 'FAILED'"`.
+
+### When something goes wrong
+
+**A job is stuck in `FAILED`.** The error is in `last_error`. Common causes:
+
+- Audio download 404 — the show pulled the episode. Acceptable; leave it.
+- Whisper crash on a corrupt mp3 — re-fetch or skip.
+- Ollama not reachable — check `ollama serve` is running, then re-set the
+  job to `PENDING` to retry: `sqlite3 data/jobs.db "UPDATE jobs SET status = 'PENDING' WHERE id = <N>"`.
+
+To bulk-retry every FAILED job: `UPDATE jobs SET status = 'PENDING', attempts = 0 WHERE status = 'FAILED';`.
+
+**A job is stuck in `BUDGET_PAUSED`.** You hit the monthly cap. Options:
+
+1. Wait for the month to roll over (the cap is calendar-month-based).
+2. Raise `[budget] monthly_cap_usd` in `config.toml`, then bulk-clear:
+   `sqlite3 data/jobs.db "UPDATE jobs SET status = 'CANONICALIZED' WHERE status = 'BUDGET_PAUSED'"`.
+   The daemon will pick them up on the next tick.
+
+**The pipeline stops advancing.** Check the dashboard or `journalctl`. Most
+likely:
+
+- Ollama is down — `pkill ollama; ollama serve &`.
+- Disk full — check `data/audio/` size; old files can be deleted (the
+  pipeline doesn't need them after `INDEXED`).
+- All jobs are in terminal status (`DONE`/`FAILED`/`BUDGET_PAUSED`) — there's
+  nothing to do until new feeds are polled.
+
+**Restart safety.** Every stage writes its output atomically and is
+idempotent. Killing the daemon mid-run and restarting picks up exactly where
+it left off — if Whisper had finished but extract crashed, the next run reuses
+the transcript JSON without re-transcribing. No state is held in memory.
+
+### Maintenance
+
+**Vault git workflow.** The vault is a normal markdown directory; treat it as
+a git repo:
+
+```bash
+cd vault && git init && git add . && git commit -m "Initial import"
+```
+
+After that, a daily cron commit gives you history without thinking:
+
+```bash
+# Daily at 2 AM
+0 2 * * *  cd /path/to/vault && git add . && git commit -m "Auto: $(date +\%F)" --allow-empty
+```
+
+Or push to a private remote if you want backup.
+
+**Audio file pruning.** `data/audio/` accumulates raw mp3/m4a files. Once an
+episode is `DONE`, the audio is no longer needed. Reclaim space:
+
+```bash
+# Delete audio for episodes that finished more than 30 days ago
+sqlite3 data/jobs.db "SELECT episode_url FROM jobs WHERE status = 'DONE' AND updated_at < date('now', '-30 days')" \
+  | sed 's|.*/||' \
+  | xargs -I{} rm -f data/audio/{}
+```
+
+(The pipeline won't redownload — it only re-runs when a job is re-set to
+`PENDING`.)
+
+**Database vacuuming.** SQLite's WAL grows over time. Once a month:
+
+```bash
+sqlite3 data/jobs.db "VACUUM"
+```
+
+**Log rotation.** If you set up the daemon under launchd/systemd with file
+output, use `logrotate` (Linux) or just truncate periodically:
+
+```bash
+# Keep last 10 MB of daemon logs
+truncate -s 10M ~/podcast-brain/logs/daemon.log
+```
+
+### Updating
+
+- **Bumping the local LLM** — change `[extract] local_model` and `ollama pull`
+  the new model. No code changes needed; the next chunk extracted uses the new
+  model. Old transcripts/extractions on disk stay valid; only fresh extractions
+  use the new prompt.
+- **Bumping the Sonnet model** — change `[budget] summarize_model`. The
+  prompt cache invalidates (caches are model-scoped) — first call after the
+  switch pays full price, subsequent calls re-cache normally. Match the
+  per-model price table in `pkm/pipeline.py:_PRICES_PER_MTOK` if you switch
+  to a model that's not already listed, or budget tracking will report $0.
+- **Schema changes to the graph or queue** — there's no migration system in
+  v1. If a future version changes the schema, plan to either nuke `data/` and
+  re-run the pipeline (audio is downloaded fresh; everything else regenerates)
+  or write a one-off migration script.
+
+### Troubleshooting cheatsheet
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `feed backfill` exits with "credentials not configured" | `[ingest.podcastindex]` empty | Sign up at podcastindex.org, paste key+secret into `config.toml` |
+| `feed add <apple-url>` says "Could not resolve" | iTunes Lookup returned no results | Check the URL has `id<digits>` in the path; try the show's RSS URL directly |
+| All jobs are `BUDGET_PAUSED` on day 1 of the month | Cap was set lower than a single summarize call costs | Raise `monthly_cap_usd` |
+| Dashboard shows a job in `URL_PENDING` for hours | yt-dlp background task crashed silently | Check daemon logs; the job will sit until manually advanced |
+| `inbox watch` doesn't pick up files | Files are still being written (size changes) | Watcher waits `file_settle_seconds` for stable size — bump if your source app writes slowly |
+| First request after model change is expensive | Prompt cache invalidated by model swap | Expected — subsequent requests will hit the cache |
+| Whisper transcribes very slowly | Falling back to CPU when CUDA was expected | Verify with `python -c "import torch; print(torch.cuda.is_available())"` |
+| Tests fail on `feedparser`-related tests | feedparser/sgmllib3k not installable | Expected on some Pythons; tests gate with `importorskip` |
+
 ## Future work
+
 
 Architecturally allowed-for but not in v1:
 
