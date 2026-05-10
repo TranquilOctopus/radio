@@ -19,6 +19,8 @@ dependencies = [
     "kuzu>=0.5",
     "python-slugify>=8.0",
     "tzlocal>=5.2",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
 ]
 
 [project.optional-dependencies]

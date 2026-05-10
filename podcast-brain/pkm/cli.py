@@ -562,10 +562,17 @@ def query(
 
 
 @app.command("serve")
-def serve() -> None:
-    """Start the FastAPI status dashboard at localhost:8765."""
-    typer.echo(_NOT_YET)
-    raise typer.Exit(1)
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host"),
+    port: int = typer.Option(8765, "--port"),
+) -> None:
+    """Start the FastAPI status dashboard."""
+    import uvicorn
+
+    from pkm.api import create_app
+
+    fastapi_app = create_app()
+    uvicorn.run(fastapi_app, host=host, port=port, log_level="info")
 
 
 @app.command("budget")
