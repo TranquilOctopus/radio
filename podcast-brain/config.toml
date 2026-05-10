@@ -92,6 +92,12 @@ target_seconds = 180
 # Overlap carried into the next chunk so cross-boundary context isn't lost
 overlap_seconds = 15
 
+[ingest.inbox]
+# Default watch directory if `inbox watch` is run without args (CLI still requires explicit arg, but config can document defaults)
+default_watch_dir = "data/inbox"
+# File-stable poll interval in seconds (how long the watcher waits to confirm a file isn't still being written)
+file_settle_seconds = 2.0
+
 [ingest.podcastindex]
 # REQUIRED for `feed backfill` and PodcastIndex-based feed resolution.
 # Free credentials: https://podcastindex.org/signup

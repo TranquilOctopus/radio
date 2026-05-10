@@ -7,9 +7,13 @@ import typer
 app = typer.Typer(name="podcast-brain", help="Personal podcast knowledge system.")
 feed_app = typer.Typer(help="Manage podcast feed subscriptions.")
 ingest_app = typer.Typer(help="Run the ingestion pipeline.")
+inbox_app = typer.Typer(help="Watch a folder for manually-dropped audio files.")
+url_app = typer.Typer(help="Ingest one-off URLs (YouTube, SoundCloud, episode pages).")
 
 app.add_typer(feed_app, name="feed")
 app.add_typer(ingest_app, name="ingest")
+app.add_typer(inbox_app, name="inbox")
+app.add_typer(url_app, name="url")
 
 _NOT_YET = "not yet implemented"
 
@@ -140,27 +144,23 @@ def feed_import(
     opml_file: Path = typer.Argument(..., help="Path to OPML export file", exists=True, dir_okay=False),
 ) -> None:
     """Bulk-import subscriptions from an OPML file."""
-    import xml.etree.ElementTree as ET
+    from pkm.ingest.opml import parse_opml
 
-    tree = ET.parse(opml_file)
-    feed_urls = [
-        outline.get("xmlUrl")
-        for outline in tree.iter("outline")
-        if outline.get("xmlUrl")
-    ]
-    if not feed_urls:
+    entries = parse_opml(opml_file)
+    if not entries:
         typer.echo("No <outline xmlUrl='…'> entries found.")
         raise typer.Exit(1)
 
     added = 0
     failed = 0
-    for url in feed_urls:
+    for entry in entries:
         try:
-            feed_id, slug, _ = _add_feed_from_url(url, requested_style=None, auto_style=True)
-            typer.echo(f"  + {url} → {slug} (id={feed_id})")
+            feed_id, slug, _ = _add_feed_from_url(entry.feed_url, requested_style=None, auto_style=True)
+            cat_hint = f" [Category: {entry.category}]" if entry.category else ""
+            typer.echo(f"  + {entry.feed_url}{cat_hint} → {slug} (id={feed_id})")
             added += 1
         except Exception as exc:
-            typer.echo(f"  ! {url}: {exc}")
+            typer.echo(f"  ! {entry.feed_url}: {exc}")
             failed += 1
     typer.echo(f"OPML import: {added} added, {failed} failed.")
 
@@ -358,6 +358,110 @@ def ingest_daemon(
 # ---------------------------------------------------------------------------
 # top-level commands
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# inbox subcommands
+# ---------------------------------------------------------------------------
+
+
+@inbox_app.command("watch")
+def inbox_watch(
+    watch_dir: Path = typer.Argument(..., help="Directory to watch", exists=True, file_okay=False),
+) -> None:
+    """Start a watcher daemon. Ctrl-C to stop."""
+    import signal
+
+    from pkm.config import load_config
+    from pkm.ingest.inbox import InboxWatcher
+    from pkm.queue import Queue
+
+    config = load_config()
+    settle = config.ingest.inbox.file_settle_seconds
+
+    with Queue(Path(config.paths.db_path)) as q:
+        q.init_schema()
+        watcher = InboxWatcher(watch_dir, q, settle_seconds=settle)
+        watcher.start()
+        typer.echo(f"Watching {watch_dir} — Ctrl-C to stop.")
+        try:
+            signal.pause()
+        except (KeyboardInterrupt, AttributeError):
+            # AttributeError: signal.pause() is not available on Windows.
+            try:
+                import time
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
+        finally:
+            watcher.stop()
+            typer.echo("Watcher stopped.")
+
+
+# ---------------------------------------------------------------------------
+# url subcommands
+# ---------------------------------------------------------------------------
+
+
+@url_app.command("add")
+def url_add(
+    source_url: str = typer.Argument(..., help="URL to fetch audio from"),
+) -> None:
+    """Download a single audio item via yt-dlp and enqueue it for processing."""
+    from pkm.config import load_config
+    from pkm.ingest.url import FetchError, fetch_audio_url
+    from pkm.queue import FeedRow, JobRow, Queue
+
+    config = load_config()
+    audio_dir = Path(config.paths.audio_dir)
+    audio_dir.mkdir(parents=True, exist_ok=True)
+
+    typer.echo(f"Downloading {source_url} ...")
+    try:
+        audio = fetch_audio_url(source_url, audio_dir)
+    except FetchError as exc:
+        typer.echo(f"Download failed: {exc}")
+        raise typer.Exit(1)
+
+    _URL_FEED_URL = "url-imports://local"
+    _URL_SLUG = "url-imports"
+    _URL_TITLE = "URL Imports"
+
+    with Queue(Path(config.paths.db_path)) as q:
+        q.init_schema()
+
+        existing = q.get_feed_by_slug(_URL_SLUG)
+        if existing is not None:
+            feed_id = existing.id
+        else:
+            feed_id = q.upsert_feed(
+                FeedRow(
+                    feed_url=_URL_FEED_URL,
+                    title=_URL_TITLE,
+                    podcast_slug=_URL_SLUG,
+                    style="informational",
+                )
+            )
+
+        import hashlib
+
+        guid = hashlib.sha1(source_url.encode()).hexdigest()
+        job_id = q.enqueue_job(
+            JobRow(
+                feed_id=feed_id,
+                episode_guid=guid,
+                episode_title=audio.title,
+                episode_url=f"file://{audio.audio_path}",
+                episode_duration_s=audio.duration_s,
+                status="PENDING",
+            )
+        )
+
+    if job_id is not None:
+        typer.echo(f"Enqueued: {audio.title!r} as job {job_id}")
+    else:
+        typer.echo(f"Already enqueued: {audio.title!r} (deduped)")
 
 
 @app.command("transcribe")

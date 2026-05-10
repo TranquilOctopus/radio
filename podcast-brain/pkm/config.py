@@ -13,8 +13,14 @@ class PodcastIndexConfig(BaseModel):
     max_episodes_per_request: int = 1000
 
 
+class InboxConfig(BaseModel):
+    default_watch_dir: str = "data/inbox"
+    file_settle_seconds: float = 2.0
+
+
 class IngestConfig(BaseModel):
     podcastindex: PodcastIndexConfig = Field(default_factory=PodcastIndexConfig)
+    inbox: InboxConfig = Field(default_factory=InboxConfig)
 
 
 class PathsConfig(BaseModel):

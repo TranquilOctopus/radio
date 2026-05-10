@@ -242,7 +242,16 @@ class Pipeline:
     def _download(self, job: JobRow) -> None:
         dest = self._audio_path(job)
         if not dest.exists():
-            self._downloader(job.episode_url, dest)
+            if job.episode_url.startswith("file://"):
+                # Local file dropped via inbox or url-add; copy rather than
+                # HTTP-fetch so the pipeline works cross-filesystem and the
+                # original file is preserved in the watch dir.
+                import shutil
+                src = Path(job.episode_url[len("file://"):])
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dest)
+            else:
+                self._downloader(job.episode_url, dest)
         self._advance(job, "DOWNLOADED")
 
     def _transcribe(self, job: JobRow) -> None:
