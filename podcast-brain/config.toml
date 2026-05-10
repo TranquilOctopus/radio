@@ -86,6 +86,12 @@ weekly_digest_words = 1200
 # Exclude banter-style shows from the weekly digest by default
 exclude_banter_from_digest = true
 
+[chunker]
+# Target chunk length in seconds (~3 minutes keeps LLM context manageable)
+target_seconds = 180
+# Overlap carried into the next chunk so cross-boundary context isn't lost
+overlap_seconds = 15
+
 [ingest.podcastindex]
 # REQUIRED for `feed backfill` and PodcastIndex-based feed resolution.
 # Free credentials: https://podcastindex.org/signup

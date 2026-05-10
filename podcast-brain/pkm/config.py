@@ -75,6 +75,11 @@ class SummarizeConfig(BaseModel):
     exclude_banter_from_digest: bool = True
 
 
+class ChunkerConfig(BaseModel):
+    target_seconds: int = 180
+    overlap_seconds: int = 15
+
+
 class Config(BaseModel):
     paths: PathsConfig = Field(default_factory=PathsConfig)
     compute: ComputeConfig = Field(default_factory=ComputeConfig)
@@ -85,6 +90,7 @@ class Config(BaseModel):
     transcribe: TranscribeConfig = Field(default_factory=TranscribeConfig)
     summarize: SummarizeConfig = Field(default_factory=SummarizeConfig)
     ingest: IngestConfig = Field(default_factory=IngestConfig)
+    chunker: ChunkerConfig = Field(default_factory=ChunkerConfig)
 
 
 # Config is not cached: callers re-read at runtime so edits take effect without restart.
