@@ -178,6 +178,11 @@ class Queue:
         row = cur.fetchone()
         return _row_to_feed(row) if row else None
 
+    def get_feed_by_id(self, feed_id: int) -> FeedRow | None:
+        cur = self._conn.execute("SELECT * FROM feeds WHERE id = ?", (feed_id,))
+        row = cur.fetchone()
+        return _row_to_feed(row) if row else None
+
     def get_feed_by_slug(self, slug: str) -> FeedRow | None:
         cur = self._conn.execute("SELECT * FROM feeds WHERE podcast_slug = ?", (slug,))
         row = cur.fetchone()

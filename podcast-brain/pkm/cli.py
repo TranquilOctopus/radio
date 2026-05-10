@@ -216,17 +216,121 @@ def feed_backfill(
 
 
 @ingest_app.command("now")
-def ingest_now() -> None:
+def ingest_now(
+    config_path: Path | None = typer.Option(None, "--config", help="Path to config.toml"),
+) -> None:
     """One-shot ingest: process all pending episodes."""
-    typer.echo(_NOT_YET)
-    raise typer.Exit(1)
+    from pkm.config import load_config
+    from pkm.pipeline import Pipeline
+    from pkm.queue import Queue
+    from pkm.store.graph import Graph
+    from pkm.store.vault import Vault
+
+    config = load_config(config_path)
+    db_path = Path(config.paths.db_path)
+    graph_path = Path(config.paths.graph_dir)
+    vault_path = Path(config.paths.vault_dir)
+
+    with Queue(db_path) as q:
+        q.init_schema()
+        with Graph(graph_path) as g:
+            g.init_schema()
+            vault = Vault(vault_path)
+
+            done: int = 0
+
+            def _on_advance(job_id: int, from_status: str, to_status: str) -> None:
+                nonlocal done
+                typer.echo(f"  job {job_id}: {from_status} → {to_status}")
+                if to_status == "DONE":
+                    done += 1
+
+            pipeline = Pipeline(
+                config=config,
+                queue=q,
+                graph=g,
+                vault=vault,
+                on_stage_advance=_on_advance,
+            )
+            n = pipeline.run_until_idle()
+
+    typer.echo(f"Processed {done} jobs ({n} iterations).")
 
 
 @ingest_app.command("daemon")
-def ingest_daemon() -> None:
+def ingest_daemon(
+    config_path: Path | None = typer.Option(None, "--config", help="Path to config.toml"),
+) -> None:
     """Start the ingest daemon (APScheduler: poll feeds + run pipeline)."""
-    typer.echo(_NOT_YET)
-    raise typer.Exit(1)
+    import logging
+
+    from apscheduler.schedulers.blocking import BlockingScheduler
+
+    from pkm.config import load_config
+    from pkm.ingest.pacer import Pacer
+    from pkm.ingest.rss import fetch_feed
+    from pkm.pipeline import Pipeline
+    from pkm.queue import FeedRow, JobRow, Queue
+    from pkm.store.graph import Graph
+    from pkm.store.vault import Vault
+
+    logging.basicConfig(level=logging.INFO)
+    config = load_config(config_path)
+
+    db_path = Path(config.paths.db_path)
+    graph_path = Path(config.paths.graph_dir)
+    vault_path = Path(config.paths.vault_dir)
+
+    q = Queue(db_path)
+    q.init_schema()
+    g = Graph(graph_path)
+    g.init_schema()
+    vault = Vault(vault_path)
+
+    pipeline = Pipeline(config=config, queue=q, graph=g, vault=vault)
+
+    def _poll_feeds() -> None:
+        feeds = q.list_feeds()
+        for feed in feeds:
+            result = fetch_feed(feed.feed_url)
+            if result.status != 200 or not result.episodes:
+                continue
+            pacer = Pacer(q, config.backlog)
+            added = pacer.enqueue_episodes_for_feed(feed.id, result.episodes)
+            if added:
+                logging.getLogger(__name__).info(
+                    "Polled %s: %d new episodes enqueued", feed.title, added
+                )
+        pacer = Pacer(q, config.backlog)
+        pacer.release_next_batch()
+
+    def _run_pipeline() -> None:
+        pipeline.advance_one()
+
+    def _weekly_digest() -> None:
+        # Step 10 will implement the actual weekly synthesis.
+        logging.getLogger(__name__).info("would generate weekly digest (Step 10 pending)")
+
+    scheduler = BlockingScheduler()
+    scheduler.add_job(_poll_feeds, "interval", minutes=30, id="poll_feeds")
+    scheduler.add_job(_run_pipeline, "interval", minutes=5, id="run_pipeline")
+    scheduler.add_job(
+        _weekly_digest,
+        "cron",
+        day_of_week="sun",
+        hour=8,
+        minute=0,
+        id="weekly_digest",
+    )
+
+    typer.echo("Daemon starting. Ctrl-C to stop.")
+    try:
+        scheduler.start()
+    except KeyboardInterrupt:
+        scheduler.shutdown()
+        q.close()
+        g.close()
+        typer.echo("Daemon stopped.")
 
 
 # ---------------------------------------------------------------------------
