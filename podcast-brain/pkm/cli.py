@@ -19,44 +19,195 @@ _NOT_YET = "not yet implemented"
 # ---------------------------------------------------------------------------
 
 
+_VALID_STYLES = ["informational", "banter", "narrative", "skip"]
+_AUTO_STYLE_SENTINEL = "__pending_classification"
+
+
+def _add_feed_from_url(
+    feed_url: str,
+    *,
+    requested_style: str | None,
+    auto_style: bool,
+    config_path: Path | None = None,
+) -> tuple[int, str, str]:
+    from slugify import slugify
+
+    from pkm.config import load_config
+    from pkm.ingest.podcastindex import PodcastIndex
+    from pkm.queue import FeedRow, Queue
+
+    config = load_config(config_path)
+    style = (
+        _AUTO_STYLE_SENTINEL if auto_style
+        else (requested_style or "informational")
+    )
+
+    pi_id: int | None = None
+    itunes_id: int | None = None
+    title = feed_url
+    language: str | None = None
+
+    if config.ingest.podcastindex.api_key and config.ingest.podcastindex.api_secret:
+        pi = PodcastIndex(config.ingest.podcastindex)
+        info = pi.lookup_by_feed_url(feed_url)
+        if info:
+            pi_id = info.feed_id
+            itunes_id = info.itunes_id
+            title = info.title or title
+            language = info.language
+
+    slug = slugify(title, max_length=60)
+    with Queue(Path(config.paths.db_path)) as q:
+        q.init_schema()
+        feed_id = q.upsert_feed(
+            FeedRow(
+                feed_url=feed_url,
+                podcast_index_id=pi_id,
+                itunes_id=itunes_id,
+                title=title,
+                podcast_slug=slug,
+                style=style,
+                language=language,
+            )
+        )
+    return feed_id, slug, style
+
+
 @feed_app.command("add")
 def feed_add(
     url_or_name: str = typer.Argument(..., help="RSS URL, show name, or Apple Podcasts URL"),
-    style: str | None = typer.Option(None, "--style", "-s", help="Show style: informational | banter | narrative | skip"),
+    style: str | None = typer.Option(None, "--style", "-s", help=f"Show style: {' | '.join(_VALID_STYLES)}"),
     auto_style: bool = typer.Option(False, "--auto-style", help="Auto-detect show style on first ingest"),
 ) -> None:
     """Add a podcast feed by RSS URL, show name, or Apple Podcasts URL."""
-    typer.echo(_NOT_YET)
-    raise typer.Exit(1)
+    if style is not None and style not in _VALID_STYLES:
+        typer.echo(f"Invalid style: {style}. Must be one of {_VALID_STYLES}.")
+        raise typer.Exit(2)
+
+    if url_or_name.startswith("http") and "podcasts.apple.com" in url_or_name:
+        from pkm.ingest.itunes import resolve_apple_podcasts_url
+
+        info = resolve_apple_podcasts_url(url_or_name)
+        if info is None:
+            typer.echo("Could not resolve Apple Podcasts URL to a feed.")
+            raise typer.Exit(1)
+        feed_url = info.feed_url
+    elif url_or_name.startswith("http"):
+        feed_url = url_or_name
+    else:
+        from pkm.ingest.itunes import search_podcast
+
+        candidates = search_podcast(url_or_name, limit=3)
+        if not candidates:
+            typer.echo(f"No podcasts found matching '{url_or_name}'.")
+            raise typer.Exit(1)
+        for i, c in enumerate(candidates, 1):
+            typer.echo(f"  {i}. {c.collection_name} ({c.artist_name or 'unknown'}) — {c.feed_url}")
+        choice = typer.prompt("Pick a number (or 0 to cancel)", type=int)
+        if choice == 0 or choice > len(candidates):
+            raise typer.Exit(1)
+        feed_url = candidates[choice - 1].feed_url
+
+    feed_id, slug, final_style = _add_feed_from_url(
+        feed_url, requested_style=style, auto_style=auto_style
+    )
+    typer.echo(f"Added: {feed_url} (slug: {slug}) feed_id={feed_id} style={final_style}")
 
 
 @feed_app.command("style")
 def feed_style(
-    show: str = typer.Argument(..., help="Show name or feed identifier"),
-    style: str = typer.Argument(..., help="Show style: informational | banter | narrative | skip"),
+    show: str = typer.Argument(..., help="Show slug or feed id"),
+    style: str = typer.Argument(..., help=f"Show style: {' | '.join(_VALID_STYLES)}"),
 ) -> None:
     """Set the processing style for a subscribed show."""
-    typer.echo(_NOT_YET)
-    raise typer.Exit(1)
+    if style not in _VALID_STYLES:
+        typer.echo(f"Invalid style: {style}. Must be one of {_VALID_STYLES}.")
+        raise typer.Exit(2)
+
+    from pkm.config import load_config
+    from pkm.queue import Queue
+
+    config = load_config()
+    with Queue(Path(config.paths.db_path)) as q:
+        q.init_schema()
+        target: str | int = int(show) if show.isdigit() else show
+        q.set_feed_style(target, style)
+    typer.echo(f"Updated {show} → style={style}")
 
 
 @feed_app.command("import")
 def feed_import(
-    opml_file: Path = typer.Argument(..., help="Path to OPML export file"),
+    opml_file: Path = typer.Argument(..., help="Path to OPML export file", exists=True, dir_okay=False),
 ) -> None:
     """Bulk-import subscriptions from an OPML file."""
-    typer.echo(_NOT_YET)
-    raise typer.Exit(1)
+    import xml.etree.ElementTree as ET
+
+    tree = ET.parse(opml_file)
+    feed_urls = [
+        outline.get("xmlUrl")
+        for outline in tree.iter("outline")
+        if outline.get("xmlUrl")
+    ]
+    if not feed_urls:
+        typer.echo("No <outline xmlUrl='…'> entries found.")
+        raise typer.Exit(1)
+
+    added = 0
+    failed = 0
+    for url in feed_urls:
+        try:
+            feed_id, slug, _ = _add_feed_from_url(url, requested_style=None, auto_style=True)
+            typer.echo(f"  + {url} → {slug} (id={feed_id})")
+            added += 1
+        except Exception as exc:
+            typer.echo(f"  ! {url}: {exc}")
+            failed += 1
+    typer.echo(f"OPML import: {added} added, {failed} failed.")
 
 
 @feed_app.command("backfill")
 def feed_backfill(
-    show: str = typer.Argument(..., help="Show name or feed identifier"),
-    from_year: str | None = typer.Option(None, "--from", metavar="YYYY", help="Backfill episodes from this year onwards"),
+    show: str = typer.Argument(..., help="Show slug or feed id"),
+    from_year: str | None = typer.Option(None, "--from", metavar="YYYY", help="Only episodes from this year onwards"),
 ) -> None:
-    """Pull full episode history for a show from PodcastIndex."""
-    typer.echo(_NOT_YET)
-    raise typer.Exit(1)
+    """Pull full episode history for a show from PodcastIndex and enqueue it."""
+    from pkm.config import load_config
+    from pkm.ingest.pacer import Pacer
+    from pkm.ingest.podcastindex import PodcastIndex
+    from pkm.queue import Queue
+
+    config = load_config()
+    if not (config.ingest.podcastindex.api_key and config.ingest.podcastindex.api_secret):
+        typer.echo(
+            "PodcastIndex credentials not configured. Set [ingest.podcastindex] "
+            "api_key + api_secret in config.toml."
+        )
+        raise typer.Exit(1)
+
+    with Queue(Path(config.paths.db_path)) as q:
+        q.init_schema()
+        feed = q.get_feed_by_slug(show) if not show.isdigit() else None
+        if feed is None and show.isdigit():
+            feeds = [f for f in q.list_feeds() if f.id == int(show)]
+            feed = feeds[0] if feeds else None
+        if feed is None or feed.podcast_index_id is None:
+            typer.echo(f"No feed '{show}' or PodcastIndex ID missing — try `feed add` first.")
+            raise typer.Exit(1)
+
+        pi = PodcastIndex(config.ingest.podcastindex)
+        since = None
+        if from_year:
+            from datetime import datetime, timezone
+            since = int(datetime(int(from_year), 1, 1, tzinfo=timezone.utc).timestamp())
+
+        episodes = pi.episodes_by_feed_id(
+            feed.podcast_index_id,
+            max_results=config.ingest.podcastindex.max_episodes_per_request,
+            since=since,
+        )
+        pacer = Pacer(q, config.backlog)
+        added = pacer.enqueue_episodes_for_feed(feed.id, episodes)
+    typer.echo(f"Backfilled {show}: {added} new episodes enqueued (of {len(episodes)} fetched).")
 
 
 # ---------------------------------------------------------------------------

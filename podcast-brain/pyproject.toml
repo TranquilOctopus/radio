@@ -24,7 +24,7 @@ dependencies = [
 mac  = ["mlx-whisper>=0.3", "torch>=2.2"]
 cuda = ["faster-whisper>=1.0", "torch>=2.2"]
 cpu  = ["faster-whisper>=1.0", "torch>=2.2"]
-dev  = ["pytest>=8"]
+dev  = ["pytest>=8", "respx>=0.21"]
 
 [project.scripts]
 podcast-brain = "pkm.cli:app"

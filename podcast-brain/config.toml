@@ -85,3 +85,12 @@ episode_summary_words = 600
 weekly_digest_words = 1200
 # Exclude banter-style shows from the weekly digest by default
 exclude_banter_from_digest = true
+
+[ingest.podcastindex]
+# REQUIRED for `feed backfill` and PodcastIndex-based feed resolution.
+# Free credentials: https://podcastindex.org/signup
+api_key = ""
+api_secret = ""
+user_agent = "podcast-brain/0.1"
+# Cap on episodes pulled per backfill request (PI hard cap is ~1000)
+max_episodes_per_request = 1000

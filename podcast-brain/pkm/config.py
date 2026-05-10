@@ -6,6 +6,17 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 
+class PodcastIndexConfig(BaseModel):
+    api_key: str = ""
+    api_secret: str = ""
+    user_agent: str = "podcast-brain/0.1"
+    max_episodes_per_request: int = 1000
+
+
+class IngestConfig(BaseModel):
+    podcastindex: PodcastIndexConfig = Field(default_factory=PodcastIndexConfig)
+
+
 class PathsConfig(BaseModel):
     audio_dir: str = "data/audio"
     transcripts_dir: str = "data/transcripts"
@@ -73,6 +84,7 @@ class Config(BaseModel):
     budget: BudgetConfig = Field(default_factory=BudgetConfig)
     transcribe: TranscribeConfig = Field(default_factory=TranscribeConfig)
     summarize: SummarizeConfig = Field(default_factory=SummarizeConfig)
+    ingest: IngestConfig = Field(default_factory=IngestConfig)
 
 
 # Config is not cached: callers re-read at runtime so edits take effect without restart.
