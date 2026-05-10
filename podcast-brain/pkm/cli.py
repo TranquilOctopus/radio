@@ -308,8 +308,29 @@ def ingest_daemon(
         pipeline.advance_one()
 
     def _weekly_digest() -> None:
-        # Step 10 will implement the actual weekly synthesis.
-        logging.getLogger(__name__).info("would generate weekly digest (Step 10 pending)")
+        from datetime import date, timedelta
+
+        from tzlocal import get_localzone
+
+        from pkm.summarize.synthesize import WeeklySynthesizer
+
+        tz = get_localzone()
+        today = date.today()
+        # Monday of current week; run on Sunday so prev week is Mon–Sun just ended
+        current_monday = today - timedelta(days=today.weekday())
+        prev_week_start = current_monday - timedelta(weeks=1)
+
+        log = logging.getLogger(__name__)
+        try:
+            synth = WeeklySynthesizer(config)
+            path = synth.run_for_week(prev_week_start)
+            log.info("Weekly digest written to %s", path)
+        except Exception as exc:
+            log.error("Weekly digest failed: %s", exc)
+
+    from tzlocal import get_localzone as _get_localzone
+
+    _local_tz = _get_localzone()
 
     scheduler = BlockingScheduler()
     scheduler.add_job(_poll_feeds, "interval", minutes=30, id="poll_feeds")
@@ -320,6 +341,7 @@ def ingest_daemon(
         day_of_week="sun",
         hour=8,
         minute=0,
+        timezone=_local_tz,
         id="weekly_digest",
     )
 
@@ -370,10 +392,42 @@ def transcribe(
 @app.command("digest")
 def digest(
     period: str = typer.Argument("weekly", help="Digest period (currently only 'weekly')"),
+    week: str | None = typer.Option(None, "--week", help="ISO week e.g. 2026-W18 (default: previous week)"),
 ) -> None:
     """Force a synthesis run to produce a digest."""
-    typer.echo(_NOT_YET)
-    raise typer.Exit(1)
+    import re
+    from datetime import date, timedelta
+
+    from tzlocal import get_localzone
+
+    from pkm.config import load_config
+    from pkm.summarize.synthesize import WeeklySynthesizer
+
+    if period != "weekly":
+        typer.echo(f"Unknown period '{period}'. Only 'weekly' is supported.")
+        raise typer.Exit(1)
+
+    if week is not None:
+        m = re.fullmatch(r"(\d{4})-W(\d{1,2})", week)
+        if not m:
+            typer.echo(f"Invalid week format '{week}'. Expected YYYY-Www (e.g. 2026-W18).")
+            raise typer.Exit(1)
+        year, week_num = int(m.group(1)), int(m.group(2))
+        # ISO week 1, day 1 (Monday) of the requested week
+        week_start = date.fromisocalendar(year, week_num, 1)
+    else:
+        # Default: previous calendar week (Mon–Sun) in local time
+        tz = get_localzone()
+        today = date.today()
+        # Monday of current week
+        current_monday = today - timedelta(days=today.weekday())
+        # Monday of previous week
+        week_start = current_monday - timedelta(weeks=1)
+
+    config = load_config()
+    synthesizer = WeeklySynthesizer(config)
+    path = synthesizer.run_for_week(week_start)
+    typer.echo(str(path))
 
 
 @app.command("query")
