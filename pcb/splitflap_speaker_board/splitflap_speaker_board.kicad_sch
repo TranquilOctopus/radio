@@ -911,6 +911,25 @@
 						)
 					)
 				)
+				(pin passive line
+					(at 2.54 -22.86 90)
+					(length 2.54)
+					(hide yes)
+					(name "EP"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "45"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
 			)
 			(embedded_fonts no)
 		)
@@ -7737,10 +7756,6 @@
 		(uuid "1dcf9f49-f60f-4b88-8674-a2f51982e6af")
 	)
 	(no_connect
-		(at 29.21 167.64)
-		(uuid "2677c869-6953-4753-a0e0-310f8d36a1a2")
-	)
-	(no_connect
 		(at 288.29 71.12)
 		(uuid "3a5d19ed-434e-493c-9437-87e2502023e9")
 	)
@@ -7795,10 +7810,6 @@
 	(no_connect
 		(at 300.99 38.1)
 		(uuid "a75e45d5-6402-4524-b9ea-026c079d5237")
-	)
-	(no_connect
-		(at 64.77 162.56)
-		(uuid "ace154a7-e4ea-4e38-8466-0eeb6788e0a3")
 	)
 	(no_connect
 		(at 300.99 58.42)
@@ -8542,16 +8553,6 @@
 	)
 	(wire
 		(pts
-			(xy 212.09 125.73) (xy 212.09 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "447f6de8-dc64-4fe6-9f30-dfb5f88a5fc6")
-	)
-	(wire
-		(pts
 			(xy 162.56 96.52) (xy 161.29 96.52)
 		)
 		(stroke
@@ -9122,7 +9123,7 @@
 	)
 	(wire
 		(pts
-			(xy 127 123.19) (xy 143.51 123.19)
+			(xy 127 123.19) (xy 134.62 123.19)
 		)
 		(stroke
 			(width 0)
@@ -9732,16 +9733,6 @@
 	)
 	(wire
 		(pts
-			(xy 281.94 66.04) (xy 288.29 66.04)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c7974c43-ed49-450c-af2e-a38528a64ab9")
-	)
-	(wire
-		(pts
 			(xy 16.51 186.69) (xy 29.21 186.69)
 		)
 		(stroke
@@ -9799,16 +9790,6 @@
 			(type default)
 		)
 		(uuid "cc40d67a-3651-4c72-91e5-9bc1ca3e4bd9")
-	)
-	(wire
-		(pts
-			(xy 212.09 133.35) (xy 212.09 130.81)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ccd8f5a2-dcc5-418d-96c5-cdea77e13cb4")
 	)
 	(wire
 		(pts
@@ -9909,16 +9890,6 @@
 			(type default)
 		)
 		(uuid "da489fae-3b03-4a2b-bf5e-af5a621098cf")
-	)
-	(wire
-		(pts
-			(xy 134.62 125.73) (xy 143.51 125.73)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dc0932d6-06c1-4884-a76b-46506f2e0ca0")
 	)
 	(wire
 		(pts
@@ -25144,16 +25115,6 @@
 		)
 		(uuid "1166ed6a-ecba-4b64-83f6-bb8a67f89315")
 	)
-	(label "SCL_3.3V"
-		(at 134.62 146.05 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "1713cc17-c809-463e-9906-c7f556c6973b")
-	)
 	(label "SCL_5V"
 		(at 81.28 82.55 0)
 		(effects
@@ -25194,7 +25155,7 @@
 		)
 		(uuid "3003d795-0b6a-418d-a518-c40fb957c1e7")
 	)
-	(label "GP8"
+	(label "LED"
 		(at 283.21 53.34 0)
 		(effects
 			(font
@@ -25304,16 +25265,6 @@
 		)
 		(uuid "4ac0fa96-029a-435a-8c6d-1ff61cefcf6b")
 	)
-	(label "LED"
-		(at 281.94 66.04 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "4b523ab9-ccd9-4edf-819f-e8d828d3ed39")
-	)
 	(label "SHND"
 		(at 134.62 140.97 0)
 		(effects
@@ -25353,16 +25304,6 @@
 			(justify left bottom)
 		)
 		(uuid "53d39610-89fd-4943-b7fd-35460cb302c7")
-	)
-	(label "AVDD"
-		(at 58.42 125.73 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "559f86be-7011-486f-be28-6cb2c9e2185d")
 	)
 	(label "+3.3V"
 		(at 119.38 62.23 0)
@@ -25484,7 +25425,7 @@
 		)
 		(uuid "9adbdc5f-615c-4f07-ac52-9b9416f207c8")
 	)
-	(label "SDA_3.3V"
+	(label "POT_IN"
 		(at 134.62 143.51 0)
 		(effects
 			(font
@@ -25563,26 +25504,6 @@
 			(justify left bottom)
 		)
 		(uuid "cbe0130b-95ff-4c3f-80b6-b28bbf1d08a2")
-	)
-	(label "POT_IN"
-		(at 19.05 170.18 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "cbfa66a1-c4c8-4afc-837f-a9e8bbb27d91")
-	)
-	(label "DGND"
-		(at 22.86 154.94 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "d3156e2b-9dfc-4722-af7b-80a02f1ae287")
 	)
 	(label "SDA_3.3V"
 		(at 29.21 82.55 180)
@@ -26002,7 +25923,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "05aa9657-13a1-4db0-be92-fea9b8339ec7")
-		(property "Reference" "J13"
+		(property "Reference" "12V"
 			(at 138.43 31.75 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26075,7 +25996,7 @@
 		(instances
 			(project "splitflap_speaker_board"
 				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
-					(reference "J13")
+					(reference "12V")
 					(unit 1)
 				)
 			)
@@ -26168,7 +26089,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "095aa945-61ee-4487-9687-1470b430e105")
 		(property "Reference" "C16"
 			(at 85.344 163.068 0)
@@ -27912,7 +27833,7 @@
 	)
 	(symbol
 		(lib_id "PCM_4ms_Resistor:20k_0603")
-		(at 130.81 125.73 90)
+		(at 130.81 125.73 270)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -28432,7 +28353,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "34d317b8-f8d3-42a9-97f1-2b9e38b45060")
-		(property "Reference" "J4"
+		(property "Reference" "LED"
 			(at 107.95 20.32 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -28508,7 +28429,7 @@
 		(instances
 			(project "splitflap_speaker_board"
 				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
-					(reference "J4")
+					(reference "LED")
 					(unit 1)
 				)
 			)
@@ -30005,8 +29926,8 @@
 		)
 	)
 	(symbol
-		(lib_id "power:+12V")
-		(at 16.51 185.42 0)
+		(lib_id "power:GND")
+		(at 16.51 185.42 180)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -30027,7 +29948,7 @@
 				)
 			)
 		)
-		(property "Value" "+3.3V"
+		(property "Value" "GND"
 			(at 16.51 180.34 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -30059,7 +29980,7 @@
 				)
 			)
 		)
-		(property "Description" "Power symbol creates a global label with name \"+12V\""
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
 			(at 16.51 185.42 0)
 			(hide yes)
 			(show_name no)
@@ -30522,6 +30443,9 @@
 		)
 		(pin "44"
 			(uuid "88d162d0-8c51-4a75-9234-53050878cf9b")
+		)
+		(pin "45"
+			(uuid "668b38a1-7c50-432e-8273-200fce5e5e24")
 		)
 		(instances
 			(project "splitflap_speaker_board"
@@ -31360,7 +31284,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric"
 			(at 261.3152 45.72 0)
 			(hide yes)
 			(show_name no)
@@ -32136,7 +32060,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "7beabee8-430f-4e90-a9f4-876da34f1c4d")
-		(property "Reference" "J6"
+		(property "Reference" "Raspberry"
 			(at 294.64 24.13 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -32156,7 +32080,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_2x20_P2.54mm_Vertical"
 			(at 293.37 53.34 0)
 			(hide yes)
 			(show_name no)
@@ -32323,7 +32247,7 @@
 		(instances
 			(project "splitflap_speaker_board"
 				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
-					(reference "J6")
+					(reference "Raspberry")
 					(unit 1)
 				)
 			)
@@ -34165,7 +34089,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0201_0603Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 177.8 163.83 0)
 			(hide yes)
 			(show_name no)
@@ -34553,7 +34477,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "9a0d82ec-22a6-490d-9f7c-6e3295b047eb")
 		(property "Reference" "C15"
 			(at 85.09 145.288 0)
@@ -35178,7 +35102,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "b6ff69e9-b4a6-49a3-b36c-4aab87f5eb0d")
-		(property "Reference" "J7"
+		(property "Reference" "Illu"
 			(at 30.48 21.59 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -35251,7 +35175,7 @@
 		(instances
 			(project "splitflap_speaker_board"
 				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
-					(reference "J7")
+					(reference "Illu")
 					(unit 1)
 				)
 			)
@@ -36062,7 +35986,7 @@
 				)
 			)
 		)
-		(property "Value" "100k_0603"
+		(property "Value" "10k"
 			(at 384.81 54.61 90)
 			(hide yes)
 			(show_name no)
@@ -36096,7 +36020,7 @@
 				)
 			)
 		)
-		(property "Description" "100K, 1%, 1/10W, 0603"
+		(property "Description" "10K, 1%, 1/10W, 0603"
 			(at 384.81 57.15 0)
 			(hide yes)
 			(show_name no)
@@ -36107,7 +36031,7 @@
 				)
 			)
 		)
-		(property "Specifications" "100K, 1%, 1/10W, 0603"
+		(property "Specifications" "10K, 1%, 1/10W, 0603"
 			(at 376.936 54.61 0)
 			(hide yes)
 			(show_name no)
@@ -36131,7 +36055,7 @@
 				(justify left)
 			)
 		)
-		(property "Part Number" "RC0603FR-07100KL"
+		(property "Part Number" "RC0603FR-0710KL"
 			(at 373.888 54.61 0)
 			(hide yes)
 			(show_name no)
@@ -36143,7 +36067,7 @@
 				(justify left)
 			)
 		)
-		(property "Display" "30k"
+		(property "Display" "10k"
 			(at 384.81 53.34 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -36153,7 +36077,7 @@
 				)
 			)
 		)
-		(property "JLCPCB ID" "C25803"
+		(property "JLCPCB ID" "C25804"
 			(at 369.57 58.42 0)
 			(hide yes)
 			(show_name no)
@@ -36164,7 +36088,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C25803"
+		(property "LCSC" "C25804"
 			(at 384.81 50.8 0)
 			(hide yes)
 			(show_name no)
@@ -36818,7 +36742,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d75a47c5-fe3d-4199-a1d5-7ee658b9f036")
-		(property "Reference" "J3"
+		(property "Reference" "Snooze"
 			(at 88.9 22.86 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -36891,7 +36815,7 @@
 		(instances
 			(project "splitflap_speaker_board"
 				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
-					(reference "J3")
+					(reference "Snooze")
 					(unit 1)
 				)
 			)
@@ -38241,7 +38165,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e647ae19-2935-49b6-b16e-f77a9b75230d")
-		(property "Reference" "J2"
+		(property "Reference" "Splitflap"
 			(at 60.96 21.59 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -38320,7 +38244,7 @@
 		(instances
 			(project "splitflap_speaker_board"
 				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
-					(reference "J2")
+					(reference "Splitflap")
 					(unit 1)
 				)
 			)
@@ -38437,7 +38361,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Inductor_SMD:L_0603_1608Metric"
+		(property "Footprint" "Inductor_SMD:L_Bourns_SRN6045TA"
 			(at 384.81 34.29 0)
 			(hide yes)
 			(show_name no)
@@ -39756,6 +39680,553 @@
 				)
 			)
 		)
+	)
+	(symbol
+		(lib_id "power:+3.3V")
+		(at 58.42 125.73 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "8cde1c10-1b1f-4b0d-9324-ab28cca0b8d6")
+		(property "Reference" "#PWR071"
+			(at 58.42 129.54 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+3.3V"
+			(at 58.42 120.65 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 58.42 125.73 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 58.42 125.73 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
+			(at 58.42 125.73 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "26561510-1756-408f-95f9-dc6a6b11a600")
+		)
+		(instances
+			(project "splitflap_speaker_board"
+				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
+					(reference "#PWR071")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 15.24 154.94 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "574a4976-2e6c-4887-812e-4ff29f2ceded")
+		(property "Reference" "#PWR072"
+			(at 15.24 161.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 19.05 156.718 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 15.24 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 15.24 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 15.24 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "d25176c2-77ba-471c-a237-a177c4304d4c")
+		)
+		(instances
+			(project "splitflap_speaker_board"
+				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
+					(reference "#PWR072")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 19.05 170.18 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "3da5b6f1-21ae-49fb-8104-6de9a7840e67")
+		(property "Reference" "#PWR073"
+			(at 19.05 176.53 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 22.86 171.958 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 19.05 170.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 19.05 170.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 19.05 170.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "40c17f85-a994-4aaa-ad6b-9a2e8c9881cd")
+		)
+		(instances
+			(project "splitflap_speaker_board"
+				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
+					(reference "#PWR073")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 29.21 167.64) (xy 24.13 167.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "efb1f565-0987-4416-a215-5e46fa64bc1a")
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 24.13 167.64 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "f7b945fa-39c4-467e-91d4-1f9508cb3e1f")
+		(property "Reference" "#PWR074"
+			(at 24.13 173.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 27.94 169.418 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 24.13 167.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 24.13 167.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 24.13 167.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "0d64f198-4fa3-41cd-afe3-9670673b39e5")
+		)
+		(instances
+			(project "splitflap_speaker_board"
+				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
+					(reference "#PWR074")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 64.77 162.56) (xy 68.58 162.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0c193e4e-0e39-4cc6-a624-3d9a421abb48")
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 68.58 162.56 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "224202d2-cb58-49f1-8bcb-76eb49935edb")
+		(property "Reference" "#PWR075"
+			(at 68.58 168.91 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 72.39 164.338 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 68.58 162.56 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 68.58 162.56 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 68.58 162.56 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "7ca9cdf0-d007-4c3d-89da-6ed010893477")
+		)
+		(instances
+			(project "splitflap_speaker_board"
+				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
+					(reference "#PWR075")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 134.62 146.05 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "5ebc7c54-fb6f-4bc5-a24e-1a2936cd91d1")
+		(property "Reference" "#PWR076"
+			(at 134.62 152.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 138.43 147.828 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 134.62 146.05 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 134.62 146.05 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 134.62 146.05 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "001a2b48-9577-482c-90e0-b35da198564e")
+		)
+		(instances
+			(project "splitflap_speaker_board"
+				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
+					(reference "#PWR076")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "INL"
+		(at 143.51 125.73 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "94f225f6-9b01-4ad1-903a-1df514932431")
+	)
+	(label "FBL"
+		(at 143.51 123.19 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "ecfe0d0f-e813-41df-aa3c-aea9cf3505a1")
+	)
+	(label "SPK_L+"
+		(at 212.09 125.73 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4f19b80f-d6fc-440a-ac3d-ce2e96f3fe3c")
+	)
+	(label "SPK_L+"
+		(at 212.09 130.81 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "01638fa6-2d7f-45c1-b58b-4c878b97056b")
+	)
+	(label "SPK_L-"
+		(at 212.09 133.35 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8393efdb-fdc5-4959-91c6-5776e35696e0")
+	)
+	(label "SPK_L-"
+		(at 212.09 128.27 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "7188052f-8dd8-4ab6-9fc5-a8b11d0c93e6")
+	)
+	(no_connect
+		(at 288.29 66.04)
+		(uuid "de2b518d-e356-4e09-a1d2-bdee60cae76b")
 	)
 	(sheet_instances
 		(path "/"

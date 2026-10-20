@@ -107,11 +107,23 @@ python3 -m venv venv
 venv/bin/pip install -r requirements.txt
 ```
 
-## 7. I2C / SPI
+## 7. I2C / SPI / I2S DAC
 
 Enable in `raspi-config` → Interface Options:
 - I2C → Enable
-- SPI → Enable (for SK6812 LED strip)
+- SPI → Enable (LED strip data on GPIO 10 / SPI0 MOSI)
+
+The PCM5122 DAC on the speaker board runs in hardware (pin-strapped) mode with
+no I2C control, so it uses the plain I2S DAC overlay. In
+`/boot/firmware/config.txt`:
+
+```
+dtparam=audio=off
+dtoverlay=hifiberry-dac
+```
+
+Reboot, then check the card shows up: `aplay -l`
 
 Verify I2C devices are visible: `i2cdetect -y 1`
-Expected addresses: 0x20, 0x21, 0x22, 0x23 (PCF8575), 0x48 (ADS1115)
+Expected addresses: 0x20, 0x21, 0x22, 0x23 (PCF8575 splitflap modules). The
+DAC and amp are not on I2C.

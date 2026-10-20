@@ -4,7 +4,7 @@ Splitflap Alarm Clock — entry point.
 Startup sequence:
   1. Load config
   2. Check WiFi — if not connected, start provisioning AP and serve setup UI
-  3. Initialise hardware (I2C bus, splitflap display, LED strip, buttons, ADC)
+  3. Initialise hardware (I2C bus, splitflap display, LED strip, buttons, audio mute lines)
   4. Home the splitflap display, then start the live time-display thread
   5. Connect to MPD and start AirPlay monitor
   6. Restore alarm from config
@@ -97,39 +97,9 @@ def build_player(cfg: dict):
     return player
 
 
-def build_potentiometer(bus, cfg: dict, on_change):
-    from hardware.potentiometer import Potentiometer
-    hw = cfg["hardware"]
-    address = hw["ads1115"]["address"]
-    if not _any_device_responds(bus, [address]):
-        logger.warning(
-            "ADS1115 not detected at 0x%02X — using mock bus for potentiometer",
-            address,
-        )
-        from hardware.mock import MockSMBus
-        bus = MockSMBus()
-    pot = Potentiometer(
-        bus,
-        address=address,
-        poll_hz=hw["ads1115"]["poll_hz"],
-        on_change=on_change,
-    )
-    pot.start()
-    return pot
-
-
-def build_amp(bus, cfg: dict):
-    from hardware.amp import Amp
-    hw = cfg["hardware"].get("amp", {})
-    address = hw.get("address", 0x4B)
-    max_volume = hw.get("max_volume", 40)
-    if not _any_device_responds(bus, [address]):
-        logger.warning(
-            "MAX9744 not detected at 0x%02X — using mock bus for amp", address
-        )
-        from hardware.mock import MockSMBus
-        bus = MockSMBus()
-    return Amp(bus, address=address, max_volume=max_volume)
+def build_audio(cfg: dict):
+    from hardware.audio_control import AudioControl
+    return AudioControl(cfg["hardware"].get("audio", {}))
 
 
 def main() -> None:
@@ -155,8 +125,8 @@ def main() -> None:
     display = build_display(bus, cfg)
     led = build_led(cfg)
     player = build_player(cfg)
-    amp = build_amp(bus, cfg)
-    amp.set_volume(cfg["radio"].get("volume", 30))
+    player.set_volume(cfg["radio"].get("volume", 30))
+    audio = build_audio(cfg)
 
     display.init_all()
     display.home_all()
@@ -188,8 +158,9 @@ def main() -> None:
     time_display.start()
     time_display.force_update()
 
-    # ── Potentiometer (volume) ────────────────────────────────────────────
-    pot = build_potentiometer(bus, cfg, on_change=amp.set_volume)
+    # Volume knob is the slide pot wired straight to the amp (analog mode),
+    # so there is nothing to poll here. Unmute once everything is up.
+    audio.unmute()
 
     # ── Buttons ───────────────────────────────────────────────────────────
     from hardware.buttons import ButtonHandler
@@ -218,7 +189,7 @@ def main() -> None:
         "player": player,
         "display": display,
         "led": led,
-        "amp": amp,
+        "audio": audio,
         "scheduler": scheduler,
         "alarm_ctrl": alarm_ctrl,
         "airplay": airplay,
@@ -229,11 +200,10 @@ def main() -> None:
         logger.info("Shutting down…")
         time_display.stop()
         airplay.stop()
-        pot.stop()
         scheduler.shutdown()
         buttons.cleanup()
         led.turn_off()
-        amp.mute()
+        audio.mute()
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, shutdown)
