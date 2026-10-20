@@ -1,0 +1,12 @@
+# KiCad backups, history and per-user/temporary files
+*-backups/
+.history/
+*.kicad_prl
+*.lck
+*.kicad_sch_old
+*.bak
+~*
+_autosave-*
+fp-info-cache
+*.rpt
+production/backups/
