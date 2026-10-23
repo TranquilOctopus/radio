@@ -1,9 +1,23 @@
 # System setup notes
 
+## Hardware: Raspberry Pi Zero W
+
+The clock runs on a **Raspberry Pi Zero W** (single-core ARMv6, 512 MB RAM,
+2.4 GHz-only WiFi) mounted on the splitflap speaker board:
+
+- Solder the 2×20 header **from the top** so the pins point down out of the
+  underside, then plug the Pi into the board's socket **component side up**.
+  The socket is wired for this orientation only; mounted the other way up,
+  5 V lands on GPIO pins and the Pi is damaged.
+- The Pi is powered from the board's 5 V rail through header pins 2/4. Don't
+  also plug in a micro-USB supply.
+- WiFi is 2.4 GHz only, so the provisioning step needs a 2.4 GHz network.
+
 ## 0. microSD card
 
-Flash **Raspberry Pi OS Lite 64-bit (Bookworm)** — Desktop is unnecessary for
-this headless controller and would push past 8 GB on its own.
+Flash **Raspberry Pi OS Lite 32-bit (Bookworm)**. The Pi Zero W's ARMv6 CPU
+can't run the 64-bit image. Desktop is unnecessary for this headless
+controller and would push past 8 GB on its own.
 
 Disk usage budget:
 
@@ -106,6 +120,9 @@ cd /home/admin/Projects/radio
 python3 -m venv venv
 venv/bin/pip install -r requirements.txt
 ```
+
+On the Pi Zero W this can take a while. Pi OS points pip at piwheels,
+which has prebuilt ARMv6 wheels for most packages.
 
 ## 7. I2C / SPI / I2S DAC
 
