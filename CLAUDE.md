@@ -31,9 +31,9 @@ the player stub logs warnings but does not crash.
 Web UI: http://localhost  
 API docs: http://localhost/docs
 
-## Hardware (Pi Zero W)
+## Hardware (Pi Zero 2 W)
 
-The Pi Zero W sits on top of the speaker board like a HAT, **component side
+The Pi Zero 2 W sits on top of the speaker board like a HAT, **component side
 up**: its header is soldered from the top so the pins point down into the
 board's 2×20 socket, with the Pi's body over the board. The socket footprint
 (`eltanin_footprints:PinSocket_2x20_P2.54mm_Vertical_PiFaceUp`) is mirrored for

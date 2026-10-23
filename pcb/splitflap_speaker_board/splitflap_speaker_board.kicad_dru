@@ -227,5 +227,5 @@
 )
 (version 1)
 (rule "zone_to_edge_clearance"
-  (constraint edge_clearance (min 0.75mm))
+  (constraint edge_clearance (min 0.7mm))
   (condition "A.Type == 'Zone'"))
