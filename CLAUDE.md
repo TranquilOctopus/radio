@@ -50,7 +50,10 @@ KiCad design: `pcb/splitflap_speaker_board/`.
 | GPIO 13 / 25 | Amp ~SHDN (high = on) / MUTE (high = muted) |
 
 - The MAX9744 runs in **analog volume mode** (ADDR1/ADDR2 grounded): the slide
-  pot wiper drives its VOL pin directly. Software volume is MPD's stream level.
+  pot wiper drives its VOL pin through an RC filter (R16 1 kΩ / C38 100 nF).
+  Software volume is MPD's stream level.
+- The DAC's AVDD has its own ferrite (FB2) off the 3.3 V trunk, and copper pour
+  is kept out from under the Pi Zero 2 W's antenna edge.
 - The DAC's strap pins are tied on the board: XSMT high (unmuted), MAST low
   (I2S slave), ATT0 low (0 dB), FLT low. It uses `dtoverlay=hifiberry-dac`
   (see `systemd/README.md`).
