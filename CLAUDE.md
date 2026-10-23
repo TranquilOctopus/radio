@@ -34,24 +34,26 @@ API docs: http://localhost/docs
 ## Hardware (Pi Zero W)
 
 The Pi Zero W sits on top of the speaker board like a HAT, **component side
-down**: a normally soldered header (pins pointing up from the component side)
-plugs into the board's 2×20 socket with the Pi flipped over, its body over the
-board. Mounted component side up, the pinout is mirrored and 5 V lands on
-GPIO 20/21. KiCad design: `pcb/splitflap_speaker_board/`.
+up**: its header is soldered from the top so the pins point down into the
+board's 2×20 socket, with the Pi's body over the board. The socket footprint
+(`eltanin_footprints:PinSocket_2x20_P2.54mm_Vertical_PiFaceUp`) is mirrored for
+this; a Pi mounted component side down would be wired backwards.
+KiCad design: `pcb/splitflap_speaker_board/`.
 
 | Bus / pin (BCM) | Devices |
 |-----|---------|
 | I2C (bus 1, GPIO 2/3) | PCF8575 × 4 at 0x20–0x23 (splitflap, via BSS138 level shifter to 5 V) |
 | SPI (GPIO 10 MOSI) | SK6812/WS2812 LED strip data |
-| GPIO 0 | Snooze button (pull-up, active low) — HAT ID_SD pin, keep `i2c_vc` off |
-| GPIO 12 | LED toggle button ("Illu" header, pull-up, active low) |
+| GPIO 27 | Snooze button (pull-up, active low) |
+| GPIO 4 | LED toggle button ("Illu" header, pull-up, active low) |
 | I2S (GPIO 18/19/21) | PCM5122 DAC (hardware mode) → MAX9744 → speakers |
-| GPIO 22 / 16 / 23 / 25 | DAC XSMT (high = play) / ATT0 (low = 0 dB) / MAST (keep low) / FLT |
-| GPIO 4 / 24 | Amp ~SHDN (high = on) / MUTE (high = muted) |
+| GPIO 13 / 25 | Amp ~SHDN (high = on) / MUTE (high = muted) |
 
 - The MAX9744 runs in **analog volume mode** (ADDR1/ADDR2 grounded): the slide
   pot wiper drives its VOL pin directly. Software volume is MPD's stream level.
-- The DAC uses `dtoverlay=hifiberry-dac` (see `systemd/README.md`).
+- The DAC's strap pins are tied on the board: XSMT high (unmuted), MAST low
+  (I2S slave), ATT0 low (0 dB), FLT low. It uses `dtoverlay=hifiberry-dac`
+  (see `systemd/README.md`).
 - Power: 12 V in → TPS562243 buck (6.6 V) → LM1084-5.0 (with heatsink) → 5 V
   rail, which also powers the Pi through header pins 2/4.
 

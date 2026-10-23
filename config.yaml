@@ -35,21 +35,16 @@ splitflap:
 hardware:
   i2c_bus: 1
   buttons:
-    # GPIO0 is the Pi's HAT-ID pin (ID_SD). It works as a plain input as long
-    # as dtparam=i2c_vc stays off (the default).
-    snooze_pin: 0
+    snooze_pin: 27
     # Illuminated LED-toggle button ("Illu" header).
-    led_pin: 12
+    led_pin: 4
     double_press_ms: 400
     # Seconds the LEDs stay at full brightness after the button is released
     # before fading off.
     led_hold_seconds: 5
-  # Audio path: PCM5122 (hardware mode) → MAX9744 (analog volume, slide pot on
-  # VOL). Neither chip is on I2C; these are the mute/strap lines (BCM numbers).
+  # Audio path: PCM5122 (hardware mode, straps tied on the board) → MAX9744
+  # (analog volume, slide pot on VOL). Only the amp's control lines reach the
+  # Pi (BCM numbers).
   audio:
-    dac_xsmt_pin: 22   # DAC soft mute, high = play
-    dac_att0_pin: 16   # DAC gain strap, low = 0 dB
-    dac_mast_pin: 23   # keep low: DAC is the I2S slave
-    dac_flt_pin: 25    # low = normal-latency filter
-    amp_shdn_pin: 4    # amp ~SHDN, high = on
-    amp_mute_pin: 24   # amp MUTE, high = muted
+    amp_shdn_pin: 13   # amp ~SHDN, high = on
+    amp_mute_pin: 25   # amp MUTE, high = muted
