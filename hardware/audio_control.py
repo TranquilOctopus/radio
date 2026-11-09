@@ -27,8 +27,8 @@ except ImportError as _exc:
 
 # Default BCM pin numbers, matching the splitflap speaker board.
 DEFAULT_PINS = {
-    "amp_shdn_pin": 13,
-    "amp_mute_pin": 25,
+    "amp_shdn_pin": 4,
+    "amp_mute_pin": 24,
 }
 
 

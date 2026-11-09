@@ -1,14 +1,14 @@
 # System setup notes
 
-## Hardware: Raspberry Pi Zero 2 W
+## Hardware: Raspberry Pi Zero 2 WH
 
-The clock runs on a **Raspberry Pi Zero 2 W** (quad-core 64-bit Cortex-A53,
-512 MB RAM, 2.4 GHz-only WiFi) mounted on the splitflap speaker board:
+The clock runs on a **Raspberry Pi Zero 2 WH** (Zero 2 W with a factory-fitted
+header: quad-core 64-bit Cortex-A53, 512 MB RAM, 2.4 GHz-only WiFi) mounted on
+the splitflap speaker board:
 
-- Solder the 2×20 header **from the top** so the pins point down out of the
-  underside, then plug the Pi into the board's socket **component side up**.
-  The socket is wired for this orientation only; mounted the other way up,
-  5 V lands on GPIO pins and the Pi is damaged.
+- Flip the Pi over and plug it into the board's socket **component side down**,
+  on ~11 mm M2.5 standoffs. The socket is wired for this orientation only;
+  mounted component side up, 5 V lands on GPIO pins and the Pi is damaged.
 - The Pi is powered from the board's 5 V rail through header pins 2/4. Don't
   also plug in a micro-USB supply.
 - WiFi is 2.4 GHz only, so the provisioning step needs a 2.4 GHz network.

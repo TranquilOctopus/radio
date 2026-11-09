@@ -35,9 +35,11 @@ splitflap:
 hardware:
   i2c_bus: 1
   buttons:
-    snooze_pin: 27
+    # GPIO0 is the Pi's HAT-ID pin (ID_SD). It works as a plain input as long
+    # as dtparam=i2c_vc stays off (the default).
+    snooze_pin: 0
     # Illuminated LED-toggle button ("Illu" header).
-    led_pin: 4
+    led_pin: 13
     double_press_ms: 400
     # Seconds the LEDs stay at full brightness after the button is released
     # before fading off.
@@ -46,5 +48,5 @@ hardware:
   # (analog volume, slide pot on VOL). Only the amp's control lines reach the
   # Pi (BCM numbers).
   audio:
-    amp_shdn_pin: 13   # amp ~SHDN, high = on
-    amp_mute_pin: 25   # amp MUTE, high = muted
+    amp_shdn_pin: 4    # amp ~SHDN, high = on
+    amp_mute_pin: 24   # amp MUTE, high = muted (pulled up on the board)

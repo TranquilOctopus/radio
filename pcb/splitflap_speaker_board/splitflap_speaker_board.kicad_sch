@@ -26150,7 +26150,7 @@
 		)
 		(uuid "6602910c-57cd-474e-96e8-39b6fff79785")
 	)
-	(label "ILLU"
+	(label "SHND"
 		(at 283.21 38.1 0)
 		(effects
 			(font
@@ -26249,16 +26249,6 @@
 			(justify left bottom)
 		)
 		(uuid "a227df9e-2bfd-4c2b-9c4a-014cb1ea4308")
-	)
-	(label "MUTE"
-		(at 300.99 55.88 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "a4a8b33d-59bd-4dea-87ba-dfac3f8f9898")
 	)
 	(label "BCK"
 		(at 22.86 157.48 0)
@@ -32855,7 +32845,7 @@
 				)
 			)
 		)
-		(property "Footprint" "eltanin_footprints:PinSocket_2x20_P2.54mm_Vertical_PiFaceUp"
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_2x20_P2.54mm_Vertical"
 			(at 293.37 53.34 0)
 			(hide yes)
 			(show_name no)
@@ -40925,26 +40915,6 @@
 		(at 288.29 66.04)
 		(uuid "de2b518d-e356-4e09-a1d2-bdee60cae76b")
 	)
-	(wire
-		(pts
-			(xy 288.29 45.72) (xy 283.21 45.72)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7cfd8143-4142-4559-bd49-8b5089765da6")
-	)
-	(label "SNOOZE"
-		(at 283.21 45.72 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "6c42a02b-1c1d-4d67-ad33-95e812e49cbf")
-	)
 	(no_connect
 		(at 288.29 48.26)
 		(uuid "1a994444-997d-4c20-b5f8-f8ad1cf431fa")
@@ -40952,14 +40922,6 @@
 	(no_connect
 		(at 300.99 48.26)
 		(uuid "aae04a94-144f-4ffb-92d0-90e7155d89fc")
-	)
-	(no_connect
-		(at 300.99 50.8)
-		(uuid "8d299d57-c2ff-4a9d-9e91-36ec1ee4b8bf")
-	)
-	(no_connect
-		(at 288.29 63.5)
-		(uuid "693b2fe2-4e9c-4b7c-8aad-6e3278e10c1c")
 	)
 	(no_connect
 		(at 300.99 68.58)
@@ -40975,7 +40937,7 @@
 		)
 		(uuid "df284320-cca1-4521-9177-3f235af0cd2c")
 	)
-	(label "SHND"
+	(label "ILLU"
 		(at 283.21 71.12 0)
 		(effects
 			(font
@@ -44001,6 +43963,44 @@
 				)
 			)
 		)
+	)
+	(no_connect
+		(at 288.29 45.72)
+		(uuid "60b77f80-0bff-4ecf-8f14-fe40118b6937")
+	)
+	(wire
+		(pts
+			(xy 288.29 63.5) (xy 283.21 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "02c8b191-5b1e-4f8a-8250-73665412bb07")
+	)
+	(label "SNOOZE"
+		(at 283.21 63.5 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "a4594d37-53cd-4873-94e7-afc48d9e0136")
+	)
+	(no_connect
+		(at 300.99 55.88)
+		(uuid "dd973bb0-8c89-48d6-afeb-c501da1a4f38")
+	)
+	(label "MUTE"
+		(at 300.99 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "1e342012-4920-4e8c-8b91-5a138fa6a21a")
 	)
 	(sheet_instances
 		(path "/"
