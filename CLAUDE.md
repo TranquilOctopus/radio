@@ -57,8 +57,14 @@ KiCad design: `pcb/splitflap_speaker_board/`.
 - The DAC's strap pins are tied on the board: XSMT high (unmuted), MAST low
   (I2S slave), ATT0 low (0 dB), FLT low. It uses `dtoverlay=hifiberry-dac`
   (see `systemd/README.md`).
-- Power: 12 V in → TPS562243 buck (6.6 V) → LM1084-5.0 (with heatsink) → 5 V
-  rail, which also powers the Pi through header pins 2/4.
+- Power: 12 V in → F1 PTC (3 A hold) → Q4 P-MOSFET reverse-polarity
+  protection → D2 TVS (SMAJ15A) → TPS562243 buck (6.6 V) → LM1084-5.0 (with
+  heatsink, tantalum C40 on its output for stability) → 5 V rail, which also
+  powers the Pi through header pins 2/4.
+- LED strip data is level-shifted 3.3 V → 5 V by Q3 (BSS138, 1 kΩ pull-up to
+  5 V) next to the Pi header; C39 is the strip's bulk cap at its connector.
+- The amp's MUTE line has a 10 kΩ pull-up (R19), so the amp stays muted while
+  the Pi boots until the software unmutes it.
 
 **Important:** the LED strip uses SPI mode (GPIO 10), not PWM, to avoid conflict with
 the I2S DAC on GPIO 18. Driven via `adafruit-circuitpython-neopixel-spi`,
