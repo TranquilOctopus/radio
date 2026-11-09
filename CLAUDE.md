@@ -31,31 +31,29 @@ the player stub logs warnings but does not crash.
 Web UI: http://localhost  
 API docs: http://localhost/docs
 
-## Hardware (Pi Zero 2 WH)
+## Hardware (Pi Zero 2 W)
 
-The Pi Zero 2 WH (factory-fitted header, pins pointing up from the component
-side) sits on top of the speaker board **component side down**: it is flipped
-over and plugged into the board's 2×20 socket (stock
-`PinSocket_2x20_P2.54mm_Vertical`, pin 1 at the west end), with the Pi's body
-over the board on ~11 mm M2.5 standoffs. Mounted component side up, the
-pinout would be mirrored and 5 V would land on GPIO pins.
+The Pi Zero 2 W sits on top of the speaker board like a HAT, **component side
+up**: its header is soldered from the top so the pins point down into the
+board's 2×20 socket, with the Pi's body over the board. The socket footprint
+(`eltanin_footprints:PinSocket_2x20_P2.54mm_Vertical_PiFaceUp`) is mirrored for
+this; a Pi mounted component side down would be wired backwards.
 KiCad design: `pcb/splitflap_speaker_board/`.
 
 | Bus / pin (BCM) | Devices |
 |-----|---------|
 | I2C (bus 1, GPIO 2/3) | PCF8575 × 4 at 0x20–0x23 (splitflap, via BSS138 level shifter to 5 V) |
 | SPI (GPIO 10 MOSI) | SK6812/WS2812 LED strip data |
-| GPIO 0 | Snooze button (pull-up, active low) — HAT ID_SD pin, keep `i2c_vc` off |
-| GPIO 13 | LED toggle button ("Illu" header, pull-up, active low) |
+| GPIO 27 | Snooze button (pull-up, active low) |
+| GPIO 4 | LED toggle button ("Illu" header, pull-up, active low) |
 | I2S (GPIO 18/19/21) | PCM5122 DAC (hardware mode) → MAX9744 → speakers |
-| GPIO 4 / 24 | Amp ~SHDN (high = on) / MUTE (high = muted) |
+| GPIO 13 / 25 | Amp ~SHDN (high = on) / MUTE (high = muted) |
 
 - The MAX9744 runs in **analog volume mode** (ADDR1/ADDR2 grounded): the slide
   pot wiper drives its VOL pin through an RC filter (R16 1 kΩ / C38 100 nF).
   Software volume is MPD's stream level.
-- The DAC's AVDD has its own ferrite (FB2) off the 3.3 V trunk. With the Pi
-  face-down its antenna faces the board, so copper pour is kept out (all four
-  layers) from the area under it, at the Pi's SD-card end.
+- The DAC's AVDD has its own ferrite (FB2) off the 3.3 V trunk, and copper pour
+  is kept out from under the Pi Zero 2 W's antenna edge.
 - The DAC's strap pins are tied on the board: XSMT high (unmuted), MAST low
   (I2S slave), ATT0 low (0 dB), FLT low. It uses `dtoverlay=hifiberry-dac`
   (see `systemd/README.md`).
