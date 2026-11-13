@@ -55,10 +55,11 @@ KiCad design: `pcb/splitflap_speaker_board/`.
 - The DAC's AVDD has its own ferrite (FB2) off the 3.3 V trunk, and copper pour
   is kept out from under the Pi Zero 2 W's antenna edge.
 - The DAC's strap pins are tied on the board: XSMT high (unmuted), MAST low
-  (I2S slave), ATT0 low (0 dB), FLT low. It uses `dtoverlay=hifiberry-dac`
+  (I2S slave), ATT0 low (0 dB), FLT low, DEMP low (pin 10, no de-emphasis). It uses `dtoverlay=hifiberry-dac`
   (see `systemd/README.md`).
 - Power: 12 V in → F1 PTC (3 A hold) → Q4 P-MOSFET reverse-polarity
-  protection → D2 TVS (SMAJ15A) → TPS562243 buck (6.6 V) → LM1084-5.0 (with
+  protection → D2 TVS (SMAJ15A) → TPS562243 buck (6.6 V; EN held at ~3.8 V by
+  the R5/R21 divider, the pin's limit is 5.5 V) → LM1084-5.0 (with
   heatsink, tantalum C40 on its output for stability) → 5 V rail, which also
   powers the Pi through header pins 2/4.
 - LED strip data is level-shifted 3.3 V → 5 V by Q3 (BSS138, 1 kΩ pull-up to
