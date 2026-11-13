@@ -34543,7 +34543,7 @@
 				)
 			)
 		)
-		(property "Value" "20k_0603"
+		(property "Value" "68k_0603"
 			(at 120.65 133.35 90)
 			(hide yes)
 			(show_name no)
@@ -34577,7 +34577,7 @@
 				)
 			)
 		)
-		(property "Description" "20k, 1%, 1/10W, 0603"
+		(property "Description" "68k, 1%, 1/10W, 0603"
 			(at 120.65 130.81 0)
 			(hide yes)
 			(show_name no)
@@ -34588,7 +34588,7 @@
 				)
 			)
 		)
-		(property "Specifications" "20k, 1%, 1/10W, 0603"
+		(property "Specifications" "68k, 1%, 1/10W, 0603"
 			(at 128.524 133.35 0)
 			(hide yes)
 			(show_name no)
@@ -34600,7 +34600,7 @@
 				(justify left)
 			)
 		)
-		(property "Manufacturer" "Yageo"
+		(property "Manufacturer" "UNI-ROYAL"
 			(at 130.048 133.35 0)
 			(hide yes)
 			(show_name no)
@@ -34612,7 +34612,7 @@
 				(justify left)
 			)
 		)
-		(property "Part Number" "RC0603FR-0720KL"
+		(property "Part Number" "0603WAF6802T5E"
 			(at 131.572 133.35 0)
 			(hide yes)
 			(show_name no)
@@ -34624,7 +34624,7 @@
 				(justify left)
 			)
 		)
-		(property "Display" "20k"
+		(property "Display" "68k"
 			(at 120.396 128.27 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -34634,7 +34634,7 @@
 				)
 			)
 		)
-		(property "JLCPCB ID" "C4184"
+		(property "JLCPCB ID" "C23231"
 			(at 120.65 130.81 0)
 			(hide yes)
 			(show_name no)
@@ -34645,7 +34645,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C4184"
+		(property "LCSC" "C23231"
 			(at 120.142 126.238 0)
 			(hide yes)
 			(show_name no)
@@ -37218,7 +37218,7 @@
 				)
 			)
 		)
-		(property "Value" "20k_0603"
+		(property "Value" "68k_0603"
 			(at 120.65 125.73 90)
 			(hide yes)
 			(show_name no)
@@ -37252,7 +37252,7 @@
 				)
 			)
 		)
-		(property "Description" "20k, 1%, 1/10W, 0603"
+		(property "Description" "68k, 1%, 1/10W, 0603"
 			(at 120.65 123.19 0)
 			(hide yes)
 			(show_name no)
@@ -37263,7 +37263,7 @@
 				)
 			)
 		)
-		(property "Specifications" "20k, 1%, 1/10W, 0603"
+		(property "Specifications" "68k, 1%, 1/10W, 0603"
 			(at 128.524 125.73 0)
 			(hide yes)
 			(show_name no)
@@ -37275,7 +37275,7 @@
 				(justify left)
 			)
 		)
-		(property "Manufacturer" "Yageo"
+		(property "Manufacturer" "UNI-ROYAL"
 			(at 130.048 125.73 0)
 			(hide yes)
 			(show_name no)
@@ -37287,7 +37287,7 @@
 				(justify left)
 			)
 		)
-		(property "Part Number" "RC0603FR-0720KL"
+		(property "Part Number" "0603WAF6802T5E"
 			(at 131.572 125.73 0)
 			(hide yes)
 			(show_name no)
@@ -37299,7 +37299,7 @@
 				(justify left)
 			)
 		)
-		(property "Display" "20k"
+		(property "Display" "68k"
 			(at 120.65 119.38 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -37309,7 +37309,7 @@
 				)
 			)
 		)
-		(property "JLCPCB ID" "C4184"
+		(property "JLCPCB ID" "C23231"
 			(at 120.65 123.19 0)
 			(hide yes)
 			(show_name no)
@@ -37320,7 +37320,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C4184"
+		(property "LCSC" "C23231"
 			(at 120.65 116.84 0)
 			(hide yes)
 			(show_name no)
@@ -44346,6 +44346,186 @@
 				)
 			)
 		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 147.32 264.16 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "76b5925b-09c8-4992-b6b1-6784449de694")
+		(property "Reference" "R22"
+			(at 149.098 262.636 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.016 1.016)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100k"
+			(at 149.098 264.414 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 147.32 264.16 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 147.32 264.16 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 147.32 264.16 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25803"
+			(at 149.098 262.636 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "6e05909f-bf25-4e0a-a529-d9f8fcd68190")
+		)
+		(pin "1"
+			(uuid "d7a3ed88-057c-4a0c-b437-654303e40be4")
+		)
+		(instances
+			(project "splitflap_speaker_board"
+				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
+					(reference "R22")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3.3V")
+		(at 147.32 261.62 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "853e95ae-49ec-4dfa-9312-97a011e46f4e")
+		(property "Reference" "#PWR0135"
+			(at 147.32 265.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+3.3V"
+			(at 147.32 256.54 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 147.32 261.62 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 147.32 261.62 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
+			(at 147.32 261.62 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "d623d6d4-de01-4c4b-b30a-f9df2dd2efa4")
+		)
+		(instances
+			(project "splitflap_speaker_board"
+				(path "/b4cc34c8-ceb0-4ee0-8fc9-85d508a50e55"
+					(reference "#PWR0135")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "POT_IN"
+		(at 147.32 266.70000000000005 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "fb90c036-b6f4-4ce2-9946-86fb4b259264")
 	)
 	(sheet_instances
 		(path "/"
